@@ -6,14 +6,11 @@ written in Substrate. The page uses
 and runs programs in the browser. The server uses the standard library's HTTP
 server.
 
-It uses the substrate repository next to this one. In the dev shell
-(`nix develop`):
+The dev shell (`nix develop`) has substrate, from its npm release. In it:
 
-    ../substrate/bin/substrate test -A                 # the tests, most of them in Chromium
-    ../substrate/bin/substrate site website            # the page, in build/sites/website
-    ../substrate/bin/substrate serve build/sites/website
+    substrate test -A          # the tests, most of them in Chromium
+    substrate site website     # the page, in build/sites/website
 
-To run the site with its own server:
+The site's server, at http://127.0.0.1:8000/:
 
-    ../substrate/bin/substrate build serve.sub -o build/serve
-    ../substrate/bin/substrate run -R=build/sites/website -N=127.0.0.1 build/serve build/sites/website
+    substrate run -R=build/sites/website -N=127.0.0.1 serve.sub build/sites/website

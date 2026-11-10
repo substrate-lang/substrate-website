@@ -20,13 +20,36 @@
           } > "$out/bin/chromium"
           chmod +x "$out/bin/chromium"
         '';
+      # substrate's npm release, with no toolchains from substrate upgrade in place of it
+      substrate = pkgs: pkgs.stdenvNoCC.mkDerivation {
+        pname = "substrate";
+        version = "0.10.1";
+        src = pkgs.fetchurl {
+          url = "https://registry.npmjs.org/substrate-lang/-/substrate-lang-0.10.1.tgz";
+          hash = "sha512-4K0FHhFhjCWcLDVQQjnuwOtSByaE4rJYa7vvEF2Vkq9YYkLGcnJUHD0wkkuMZjOoQdI/XK2VLdGt8MxauCjOAg==";
+        };
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        installPhase = ''
+          mkdir -p $out/lib/substrate $out/lib/home $out/bin
+          cp -r . $out/lib/substrate
+          makeWrapper ${pkgs.nodejs}/bin/node $out/bin/substrate \
+            --add-flags $out/lib/substrate/bin/substrate.mjs --set SUBSTRATE_HOME $out/lib/home
+        '';
+      };
     in {
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {
           packages = [
+            (substrate pkgs)
             pkgs.nodejs        # V8: substrate's host, and the browser tests' driver
             (chromium pkgs)    # the headless browser of the browser tests (above)
           ];
+          # build/substrate: substrate's source, from which the site packs the compiler's (package.sub)
+          shellHook = ''
+            root="$PWD"
+            while [ "$root" != / ] && [ ! -e "$root/flake.nix" ]; do root="$(dirname "$root")"; done
+            mkdir -p "$root/build" && ln -sfn ${substrate pkgs}/lib/substrate "$root/build/substrate"
+          '';
         };
       });
     };

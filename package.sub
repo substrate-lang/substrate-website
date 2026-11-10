@@ -7,4 +7,4 @@
                        (hash "sha256:3509d8b7c67efdc6e703b9dffb288bc833625595f9cb6181e1191d17da24a1d8")))
   (tests (browser))
   (sites (website "page.sub" (html "index.html")
-                  (files "/src" (from "../substrate") "substrate/compiler/*.sub" "substrate/host/**/*.sub"))))
+                  (files "/src" (from "build/substrate") "substrate/compiler/*.sub" "substrate/host/**/*.sub"))))
