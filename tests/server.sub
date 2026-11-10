@@ -1,0 +1,33 @@
+(require-unqualified std/http/test)
+(require-unqualified std/http/server)
+(require-unqualified "../server.sub")
+
+(define w website)
+(define names (array string 3) (array-of string ".localhost" "substrate-lang.com" "www.substrate-lang.com"))
+(define t http-test)
+
+(define (got [target string] [host string]) -> i32
+  (website-init! (& w) "tests/site" (slice names) "substrate-lang.com")
+  (expect (http-test! (& t) (& (-> w server)) "GET" target (slice (array-of string "host" host)) (cast (slice u8) "")))
+  (http-test-status (& t)))
+
+(test server-page
+  (expect-equal (got "/" "substrate-lang.com") 200)
+  (expect-equal (http-test-header (& t) "content-type") "text/html; charset=utf-8")
+  (expect-equal (http-test-header (& t) "cache-control") "no-cache")
+  (expect-equal (http-test-header (& t) "content-security-policy") website-policy)
+  (expect-equal (http-test-header (& t) "x-content-type-options") "nosniff"))
+
+(test server-program
+  (expect-equal (got "/program/page.0123456789ab@0+0.wasm" "substrate-lang.com") 200)
+  (expect-equal (http-test-header (& t) "content-type") "application/wasm")
+  (expect-equal (http-test-header (& t) "cache-control") "public, max-age=31536000, immutable")
+  (expect-equal (got "/program/program" "substrate-lang.com") 200)
+  (expect-equal (http-test-header (& t) "cache-control") "no-cache"))
+
+(test server-hosts
+  (expect-equal (got "/?a=1" "www.substrate-lang.com") 301)
+  (expect-equal (http-test-header (& t) "location") "http://substrate-lang.com/?a=1")
+  (expect-equal (got "/" "localhost:8000") 200)
+  (expect-equal (got "/" "127.0.0.1:8000") 200)
+  (expect-equal (got "/" "example.com") 403))

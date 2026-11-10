@@ -1,0 +1,65 @@
+;; The playground's compiler half, which runs on workers: runner-main evaluates programs in a session and calls their
+;; main. Each program comes as a message, and the answer is a byte, 1 for a failure, the compile and run times in ms as
+;; two f64s, and the error.
+(require-unqualified compiler/macros)
+(require-unqualified compiler/expander)
+(require-unqualified compiler/roots)
+(require-unqualified host/worker)
+(require-unqualified host/events)
+(require-unqualified host/modules/clock)
+(runtime-require compiler/substrate compiler/macros std/encoding/json)
+
+(provide runner-main)
+
+(define program buffer)
+(define running bool #f)
+(define compile-ms f64 0.0)
+(define started f64 0.0)
+
+(define (runner-main)
+  (set! program (make-buffer))
+  (event-handler! worker-source heard)
+  (trap-handler! trapped)
+  (session-open! '"main.sub"))
+
+(define (heard [source u32] [kind u32] [w u32] [tag (ptr void)] [value i32])
+  (when (== kind worker-message)
+    (set! (-> program length) 0)
+    (events-take! (& program))
+    (run! (string->datum (buffer-string (& program))))))
+
+(define (main-form? [f datum]) -> bool
+  (let ([d (syntax->datum f)])
+    (and (pair? d) (equal? (car d) 'define) (pair? (cdr d)) (pair? (cadr d)) (equal? (car (cadr d)) 'main))))
+
+(define (defines-main? [text datum]) -> bool
+  (let ([forms (read-text text 'main.sub)])
+    (while (pair? forms)
+      (when (main-form? (car forms)) (return #t))
+      (set! forms (cdr forms)))
+    #f))
+
+(define (run! [text datum])
+  (set! running #t)
+  (set! started (clock-monotonic))
+  (let ([ok (session-eval-text! text '"main.sub")])
+    (set! compile-ms (- (clock-monotonic) started))
+    (set! started (clock-monotonic))
+    (when (and ok (defines-main? text)) (set! ok (session-eval-text! '"(main)" '"main.sub")))
+    (set! running #f)
+    (answer! (not ok) (if ok 0 (session-error)))))
+
+(define (answer! [failed bool] [error datum])
+  (let ([b (make-buffer)] [times (array f64 2)])
+    (buffer-add-byte! (& b) failed)
+    (set! (@ times 0) compile-ms)
+    (set! (@ times 1) (- (clock-monotonic) started))
+    (buffer-add! (& b) (slice (cast (ptr u8) times) 16))
+    (when (!= error 0) (buffer-add-string! (& b) (datum->string error)))
+    (worker-send 0 (buffer-bytes (& b)))
+    (buffer-free! (& b))))
+
+(define (trapped [why string])
+  (when running
+    (set! running #f)
+    (answer! #t (trap-report why))))

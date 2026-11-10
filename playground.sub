@@ -1,0 +1,359 @@
+;; The playground: an editor for a program, a console for its output, and examples to start from. Programs run on
+;; workers beside the page (runner.sub and examples/compiler.sub), and the URL's #playground/name names the example
+;; shown.
+(require-unqualified web-ui)
+(require-unqualified host/worker)
+(require-unqualified host/modules/clock)
+(require-unqualified host/modules/timer)
+(require-unqualified host/web/location)
+(require-unqualified "code.sub")
+(require-unqualified "runner.sub")
+(require-unqualified "examples/compiler.sub")
+
+(provide playground)
+
+;; ---- examples ----
+
+(struct example [index u32] [slug string] [label string] [source string] [built-in bool])
+
+(const example-count u32 6)
+
+(define examples (array example 6))
+
+(define (example! [i u32] [slug string] [label string] [source string] [built-in bool])
+  (set! (@ examples i) (example #:index i #:slug slug #:label label #:source source #:built-in built-in)))
+
+(define (examples-init!)
+  (example! 0 "hello" "Hello" (include-text "examples/hello.sub") #f)
+  (example! 1 "shapes" "Variants" (include-text "examples/shapes.sub") #f)
+  (example! 2 "macros" "Macros" (include-text "examples/macros.sub") #f)
+  (example! 3 "json" "JSON" (include-text "examples/json.sub") #f)
+  (example! 4 "memory" "Memory" (include-text "examples/memory.sub") #f)
+  (example! 5 "compiler" "Compile the compiler" (include-text "examples/compiler.sub") #t))
+
+(define (starts? [s string] [prefix string]) -> bool
+  (and (>= (-> s length) (-> prefix length)) (== (slice s 0 (-> prefix length)) prefix)))
+
+;; The example that the URL's #playground/name names, or example-count.
+(define (example-in-url) -> u32
+  (let ([url (location-get)] [found example-count])
+    (for ([i u32 0]) (< i (-> url length)) (+= i 1)
+      (when (== (@ url i) #\#)
+        (let ([hash (slice url i)])
+          (when (starts? hash "#playground/")
+            (for ([k u32 0]) (< k example-count) (+= k 1)
+              (when (== (slice hash 12) (-> (@ examples k) slug)) (set! found k)))))
+        (break)))
+    (free (-> url bytes))
+    found))
+
+;; ---- data ----
+
+(const max-output u32 200000)
+
+(const tone-quiet u32 0)
+(const tone-busy u32 1)
+(const tone-good u32 2)
+(const tone-bad u32 3)
+
+(struct model
+  [example u32] [code string] [tokens code-tokens] [edited bool]
+  [output buffer] [cut bool] [error string]
+  [runner u32] [runner-ready bool] [worker u32] [running bool] [waiting bool] [began f64]
+  [status string] [tone u32] [broken bool]
+  [tag (ptr void)] [scroll u32] [panel u32])
+
+(variant message
+  [edited [text string]]
+  [key-pressed [key string] [control bool] [meta bool]]
+  [run] [stop] [reset] [clear]
+  [choose [index u32]]
+  [hash-changed]
+  [scroll-to]
+  [seen [visible bool]]
+  [worker-event [w u32] [kind u32] [value i32]])
+
+(messages message)
+
+(define (built-in? [m (ptr model)]) -> bool (-> (@ examples (-> m example)) built-in))
+
+(define (set-status! [m (ptr model)] [tone u32] [s string])
+  (free (-> m status bytes))
+  (set! (-> m status) (string-copy s))
+  (set! (-> m tone) tone))
+
+(define (set-error! [m (ptr model)] [s string])
+  (free (-> m error bytes))
+  (set! (-> m error) (string-copy s))
+  (+= (-> m scroll) 1))
+
+(define (set-code! [m (ptr model)] [s string])
+  (let ([new (string-copy s)])
+    (free (-> m code bytes))
+    (set! (-> m code) new)
+    (code-tokenize! (& (-> m tokens)) new)))
+
+(define (add-output! [m (ptr model)] [b (slice u8)])
+  (let ([out (& (-> m output))] [n (-> b length)])
+    (cond [(-> m cut) (begin)]
+          [(<= (+ (-> out length) n) max-output) (buffer-add! out b)]
+          [else
+           (set! (-> m cut) #t)
+           (buffer-add! out (slice b 0 (- max-output (-> out length))))
+           (buffer-add-string! out "\n... (more output not shown)\n")])
+    (+= (-> m scroll) 1)))
+
+(define (clear-output! [m (ptr model)])
+  (set! (-> m output length) 0)
+  (set! (-> m cut) #f)
+  (set-error! m ""))
+
+(define (ms [x f64]) -> i32 (cast i32 (nearbyint x)))
+
+(define (printed-status! [m (ptr model)] [print (closure ())])
+  (let* ([b (make-buffer)] [before (output-to! (& b))])
+    (print)
+    (output-to! before)
+    (set-status! m tone-good (buffer-string (& b)))
+    (buffer-free! (& b))))
+
+;; ---- workers ----
+
+(define (worker-heard [source u32] [kind u32] [w u32] [tag (ptr void)] [value i32])
+  (send! (worker-event w kind value)))
+
+(define (output-options) -> worker-options
+  (let ([o worker-options])
+    (worker-options-init! (& o))
+    (set! (-> o output) #t)
+    o))
+
+(define (idle-status! [m (ptr model)])
+  (unless (-> m broken)
+    (if (-> m runner-ready) (set-status! m tone-quiet "Ready") (set-status! m tone-busy "Loading compiler…"))))
+
+(define (start-runner! [m (ptr model)])
+  (when (== (-> m runner) 0)
+    (set! (-> m runner-ready) #f)
+    (let ([o (output-options)] [why error])
+      (unless (worker-start runner-main (cast (slice u8) "") (& o) (-> m tag) (& (-> m runner)) (& why))
+        (set-error! m (error-text (& why)))
+        (set! (-> m broken) #t)
+        (set-status! m tone-bad "The compiler could not be started")))))
+
+(define (finish! [m (ptr model)])
+  (when (!= (-> m worker) 0) (worker-stop (-> m worker)))
+  (set! (-> m worker) 0)
+  (set! (-> m running) #f)
+  (set! (-> m waiting) #f)
+  (start-runner! m))
+
+(define (launch! [m (ptr model)])
+  (set! (-> m waiting) #f)
+  (set! (-> m worker) (-> m runner))
+  (set! (-> m runner) 0)
+  (set! (-> m runner-ready) #f)
+  (set! (-> m began) (clock-monotonic))
+  (set-status! m tone-busy "Running…")
+  (worker-send-text (-> m worker) (-> m code)))
+
+(define (start-compiler! [m (ptr model)])
+  (let ([o (output-options)] [why error])
+    (set! (-> m began) (clock-monotonic))
+    (set-status! m tone-busy "Compiling the compiler…")
+    (unless (worker-start compile-compiler! (cast (slice u8) "") (& o) (-> m tag) (& (-> m worker)) (& why))
+      (set-error! m (error-text (& why)))
+      (set-status! m tone-bad "Failed")
+      (finish! m))))
+
+(define (answered! [m (ptr model)])
+  (let* ([b (make-buffer)] [n (events-take! (& b))] [times (cast (ptr f64) (+ (-> b bytes) 1))])
+    (cond [(< n 17) (set-status! m tone-bad "Failed")]
+          [(!= (@ (-> b bytes) 0) 0)
+           (set-error! m (cast string (slice (buffer-bytes (& b)) 17)))
+           (set-status! m tone-bad "Failed")]
+          [else
+           (let ([compiled (ms (@ times 0))] [ran (ms (@ times 1))])
+             (printed-status! m (lambda () (printf "Compiled in ~a ms, ran in ~a ms" compiled ran))))])
+    (buffer-free! (& b))
+    (finish! m)))
+
+(define (program-event! [m (ptr model)] [kind u32] [value i32])
+  (cond [(or (== kind worker-stdout) (== kind worker-stderr))
+         (let ([b (make-buffer)])
+           (events-take! (& b))
+           (add-output! m (buffer-bytes (& b)))
+           (buffer-free! (& b)))]
+        [(== kind worker-message) (answered! m)]
+        [(or (== kind worker-done) (== kind worker-ended))
+         (let ([why (events-take-text)])
+           (cond [(> (-> why length) 0)
+                  (set-error! m why)
+                  (set-status! m tone-bad "Failed")]
+                 [(and (== kind worker-ended) (!= value 0)) (set-status! m tone-bad "Failed")]
+                 [else
+                  (let ([took (ms (- (clock-monotonic) (-> m began)))])
+                    (printed-status! m (lambda () (printf "Done in ~a ms" took))))])
+           (free (-> why bytes))
+           (finish! m))]))
+
+(define (heard! [m (ptr model)] [w u32] [kind u32] [value i32])
+  (cond [(== w 0) (begin)]
+        [(== w (-> m runner))
+         (cond [(== kind worker-done)
+                (set! (-> m runner-ready) #t)
+                (cond [(-> m waiting) (launch! m)]
+                      [(not (-> m running)) (when (== (-> m tone) tone-busy) (idle-status! m))])]
+               [(== kind worker-ended)
+                (let ([why (events-take-text)])
+                  (set-error! m why)
+                  (free (-> why bytes)))
+                (set! (-> m runner) 0)
+                (set! (-> m waiting) #f)
+                (set! (-> m running) #f)
+                (set! (-> m broken) #t)
+                (set-status! m tone-bad "The compiler could not be started")])]
+        [(== w (-> m worker)) (program-event! m kind value)]))
+
+;; ---- actions ----
+
+(define (run! [m (ptr model)])
+  (unless (-> m running)
+    (clear-output! m)
+    (set! (-> m running) #t)
+    (cond [(built-in? m) (start-compiler! m)]
+          [(-> m runner-ready) (launch! m)]
+          [else
+           (set! (-> m waiting) #t)
+           (set-status! m tone-busy "Loading compiler…")
+           (start-runner! m)])))
+
+(define (stop! [m (ptr model)])
+  (when (-> m running)
+    (finish! m)
+    (set-status! m tone-quiet "Stopped")))
+
+(define (load! [m (ptr model)] [i u32])
+  (stop! m)
+  (set! (-> m example) i)
+  (set-code! m (-> (@ examples i) source))
+  (set! (-> m edited) #f)
+  (clear-output! m)
+  (idle-status! m))
+
+(define (scroll-heard [source u32] [kind u32] [id u32] [tag (ptr void)] [value i32]) (send! (scroll-to)))
+
+(define (update [m (ptr model)] [e (ptr message)])
+  (match e
+    [(edited text)
+     (set-code! m text)
+     (set! (-> m edited) #t)]
+    [(key-pressed key control meta)
+     (when (and (== key "Enter") (or control meta))
+       (prevent-default!)
+       (run! m))]
+    [run (run! m)]
+    [stop (stop! m)]
+    [reset
+     (set-code! m (-> (@ examples (-> m example)) source))
+     (set! (-> m edited) #f)]
+    [clear (clear-output! m)]
+    [(choose index)
+     (load! m index)
+     (let ([hash (make-buffer)])
+       (buffer-add-string! (& hash) "#playground/")
+       (buffer-add-string! (& hash) (-> (@ examples index) slug))
+       (location-replace (buffer-string (& hash)) 0)
+       (buffer-free! (& hash)))]
+    [hash-changed
+     (let ([i (example-in-url)])
+       (when (< i example-count)
+         (unless (== i (-> m example)) (load! m i))
+         (dom-call! (-> m panel) "scrollIntoView")))]
+    [scroll-to (dom-call! (-> m panel) "scrollIntoView")]
+    [(seen visible) (when visible (start-runner! m))]
+    [(worker-event w kind value) (heard! m w kind value)]))
+
+(define (init [m (ptr model)])
+  (examples-init!)
+  (set! (-> m code) (string-copy ""))
+  (set! (-> m status) (string-copy ""))
+  (set! (-> m error) (string-copy ""))
+  (set! (-> m output) (make-buffer))
+  (set! (-> m tag) (subscribe! worker-heard))
+  (let ([i (example-in-url)])
+    (load! m (if (< i example-count) i 0))
+    (when (< i example-count) (timer-after 0.0 (request! scroll-heard)))))
+
+(define (release [m (ptr model)])
+  (when (!= (-> m runner) 0) (worker-stop (-> m runner)))
+  (when (!= (-> m worker) 0) (worker-stop (-> m worker)))
+  (unsubscribe! (-> m tag))
+  (code-tokens-free! (& (-> m tokens)))
+  (buffer-free! (& (-> m output)))
+  (free (-> m code bytes))
+  (free (-> m status bytes))
+  (free (-> m error bytes)))
+
+(define (trapped [m (ptr model)] [why string])
+  (when (!= (-> m worker) 0) (worker-stop (-> m worker)))
+  (set! (-> m worker) 0)
+  (set! (-> m running) #f)
+  (set-error! m why)
+  (set-status! m tone-bad "Failed"))
+
+;; ---- what it looks like ----
+
+(define (status-class [m (ptr model)]) -> string
+  (case (-> m tone)
+    [(1) "pg-state busy"]
+    [(2) "pg-state good"]
+    [(3) "pg-state bad"]
+    [else "pg-state"]))
+
+(view (example-tab [e (ptr example)] [chosen u32])
+  (button ([class (if (== (-> e index) chosen) "tab on" "tab")]
+           [aria-pressed (if (== (-> e index) chosen) "true" "false")]
+           [on click (choose (-> e index))])
+    (text (-> e label))))
+
+(component (playground)
+  #:state [m model]
+  #:messages message
+  #:update update
+  #:init init
+  #:free release
+  #:trapped trapped
+  (div ([class "playground"] [node (-> m panel)] [on-window hashchange hash-changed]
+        [on visibility (seen (event visible))])
+    (div ([class "pg-bar"])
+      (div ([class "pg-tabs"] [role "group"] [aria-label "Examples"])
+        (each [e (& (@ examples 0)) example-count] #:key (-> e index) (example-tab e (-> m example))))
+      (div ([class "pg-actions"])
+        (button ([class "pg-reset"] [disabled (not (-> m edited))] [on click reset]) "Reset")
+        (if (-> m running)
+            (button ([class "pg-stop"] [on click stop]) "Stop")
+            (button ([class "pg-run"] [on click run]) "Run"))))
+    (div ([class "pg-body"])
+      (div ([class "pg-editor"])
+        (div ([class "pg-head"])
+          (if (built-in? m) (span "compiler.sub " (span ([class "pg-note"]) "read-only")) (span "main.sub")))
+        (div ([class "pg-scroll"])
+          (div ([class "pg-layers"])
+            (pre ([class "code pg-highlight"] [aria-hidden "true"]) (code-view (& (-> m tokens)) (-> m code)) "\n")
+            (textarea ([class "pg-input"] [value (-> m code)] [readonly (built-in? m)] [spellcheck "false"]
+                       [autocapitalize "off"] [autocomplete "off"] [wrap "off"] [aria-label "Program"]
+                       [on input (edited (event value))]
+                       [on keydown (key-pressed (event key) (event control) (event meta))])))))
+      (div ([class "pg-console"])
+        (div ([class "pg-head"])
+          (span "Console")
+          (button ([class "pg-clear"] [on click clear]) "Clear"))
+        (pre ([class "pg-output"] [scroll-end (-> m scroll)])
+          (when (and (== (-> m output length) 0) (== (-> m error length) 0))
+            (span ([class "pg-idle"]) "Press Run, or Ctrl/⌘ + Enter, to compile and run the program."))
+          (text (buffer-string (& (-> m output))))
+          (when (> (-> m error length) 0) (span ([class "pg-error"]) (text (-> m error)))))))
+    (div ([class "pg-status"])
+      (span ([class (status-class m)] [aria-live "polite"]) (text (-> m status)))
+      (span ([class "pg-hint"]) "Ctrl/⌘ + Enter to run"))))

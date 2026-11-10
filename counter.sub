@@ -1,0 +1,24 @@
+(require-unqualified web-ui)
+
+(provide counter)
+
+(struct state [count i32])
+
+(variant message [increment] [decrement] [reset])
+
+(define (update [s (ptr state)] [m (ptr message)])
+  (match m
+    [increment (+= (-> s count) 1)]
+    [decrement (-= (-> s count) 1)]
+    [reset (set! (-> s count) 0)]))
+
+(component (counter)
+  #:state [s state]
+  #:messages message
+  #:update update
+  (div ([class "counter"])
+    (button ([on click decrement]) "-")
+    (output (int (-> s count)))
+    (button ([on click increment]) "+")
+    (when (!= (-> s count) 0)
+      (button ([class "reset"] [on click reset]) "reset"))))

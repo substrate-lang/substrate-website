@@ -1,0 +1,34 @@
+(require-unqualified "../code.sub")
+
+;; Each token as kind:text, joined by spaces.
+(define (described [s string]) -> string
+  (let ([c code-tokens] [b (make-buffer)])
+    (memset (& c) 0 (sizeof code-tokens))
+    (code-tokenize! (& c) s)
+    (for ([i u32 0]) (< i (-> c count)) (+= i 1)
+      (let ([t (+ (-> c items) i)])
+        (when (> i 0) (buffer-add-byte! (& b) 32))
+        (buffer-add-byte! (& b) (+ 48 (-> t kind)))
+        (buffer-add-byte! (& b) 58)
+        (buffer-add-string! (& b) (slice s (-> t start) (-> t end)))))
+    (code-tokens-free! (& c))
+    (buffer-string (& b))))
+
+(test code-forms
+  (expect-equal (described "(define (sq [x i32]) -> i32 (* x x))")
+                "7:( 4:define 0:  7:( 0:sq  7:[ 0:x  5:i32 7:] 7:) 0: ->  5:i32 0:  7:( 0:* x x 7:) 7:)"))
+
+(test code-literals
+  (expect-equal (described "\"a \\\"b\\\"\" #\\a #\\( #t -1.5 #:state")
+                "2:\"a \\\"b\\\"\" 0:  3:#\\a 0:  3:#\\( 0:  3:#t 0:  3:-1.5 0:  6:#:state"))
+
+(test code-quotes
+  (expect-equal (described "'(a) `b ,c ,@d #'e #`f #,g #,@h")
+                "7:' 7:( 0:a 7:) 0:  7:` 0:b  7:, 0:c  7:,@ 0:d  7:#' 0:e  7:#` 0:f  7:#, 0:g  7:#,@ 0:h"))
+
+(test code-comments
+  (expect-equal (described "x ; note\ny") "0:x  1:; note 0:\ny"))
+
+(test code-unfinished
+  (expect-equal (described "\"open") "2:\"open")
+  (expect-equal (described "#\\") "0:#\\"))

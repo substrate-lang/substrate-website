@@ -1,0 +1,7 @@
+(define (fib [n i32]) -> i32
+  (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))
+
+(define (main)
+  (printf "Hello, Substrate!\n")
+  (for ([i 0]) (<= i 10) (+= i 1)
+    (printf "fib ~a = ~a\n" i (fib i))))

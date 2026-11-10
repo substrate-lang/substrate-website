@@ -1,0 +1,37 @@
+;; calc reads arithmetic in infix order and writes Substrate's prefix calls, at compile time.
+(require-unqualified compiler/macros)
+
+(begin-for-syntax
+  (require-unqualified compiler/macros)
+
+  (define (operator? [x datum] [operators datum]) -> bool
+    (and (identifier? x) (!= (memq (syntax-e x) operators) 0)))
+
+  (define (operand [xs datum]) -> datum
+    (let ([group (syntax->list (car xs))])
+      (cons (if (== group 0) (car xs) (car (sum group))) (cdr xs))))
+
+  (define (term [xs datum]) -> datum
+    (let* ([left (operand xs)] [e (car left)] [rest (cdr left)])
+      (while (and (pair? rest) (operator? (car rest) '(* /)))
+        (let ([right (operand (cdr rest))])
+          (set! e #`(#,(car rest) #,e #,(car right)))
+          (set! rest (cdr right))))
+      (cons e rest)))
+
+  (define (sum [xs datum]) -> datum
+    (let* ([left (term xs)] [e (car left)] [rest (cdr left)])
+      (while (and (pair? rest) (operator? (car rest) '(+ -)))
+        (let ([right (term (cdr rest))])
+          (set! e #`(#,(car rest) #,e #,(car right)))
+          (set! rest (cdr right))))
+      (cons e rest))))
+
+(define-macro (calc stx)
+  (syntax-match stx
+    [(_ e ...) (car (sum e))]))
+
+(define (main)
+  (let ([x 4] [y 10])
+    (printf "x * 2 + y / 5 = ~a\n" (calc x * 2 + y / 5))
+    (printf "(x + y) * (y - x) = ~a\n" (calc (x + y) * (y - x)))))

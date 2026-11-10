@@ -1,0 +1,132 @@
+;; The page's sections, top to bottom.
+(require-unqualified web-ui)
+(require-unqualified "code.sub")
+(require-unqualified "counter.sub")
+(require-unqualified "playground.sub")
+
+(provide site-header hero core-idea examples playground-section faq site-footer)
+
+(define counter-source string (include-text "counter.sub"))
+
+(define (panel-init [c (ptr code-tokens)] [name string] [source string]) (code-tokenize! c source))
+
+(component (code-panel [name string] [source string])
+  #:state [c code-tokens]
+  #:init panel-init
+  #:free code-tokens-free!
+  (div ([class "panel"])
+    (div ([class "panel-bar"])
+      (span ([class "panel-name"]) (text name))
+      (span ([class "panel-lang"]) "Substrate"))
+    (pre ([class "code"]) (code-view c source))))
+
+(view (wordmark)
+  (a ([class "wordmark"] [href "#top"]) "substrate" (span ([class "cursor"] [aria-hidden "true"]))))
+
+(view (site-header)
+  (header ([class "top"])
+    (a ([class "skip"] [href "#playground"]) "Skip to playground")
+    (div ([class "wrap bar"])
+      (wordmark)
+      (nav ([aria-label "Site"])
+        (a ([href "#why"]) "The Core Idea")
+        (a ([href "#playground"]) "Playground")
+        (a ([href "https://github.com/substrate-lang/substrate"]) "GitHub ↗")))))
+
+(view (hero)
+  (section ([id "top"] [class "hero"])
+    (div ([class "wrap hero-grid"])
+      (div ([class "hero-copy"])
+        (h1 "A Language for Building " (span ([class "accent"]) "Languages"))
+        (p ([class "lede"])
+          "Substrate is a Lisp for writing WebAssembly. It has C-like semantics combined with Racket-style hygienic "
+          "macros for defining new languages and DSLs. Its compiler is self-hosted, fast, and runs in the browser.")
+        (div ([class "actions"])
+          (a ([class "button primary"] [href "#playground"]) "Try Substrate")
+          (a ([class "button"] [href "#playground/compiler"]) "Compile the compiler!")))
+      (figure ([class "hero-code"])
+        (code-panel ([name "counter.sub"] [source counter-source]))
+        (div ([class "live"])
+          (span ([class "live-label"]) "live")
+          (counter))
+        (figcaption
+          "This webpage and the server it runs on are written in Substrate using the framework above. "
+          (a ([href "https://github.com/substrate-lang/substrate-website"]) "Its source ↗"))))))
+
+(view (core-idea)
+  (section ([id "why"] [class "section"])
+    (div ([class "wrap"])
+      (p ([class "label"]) "The Core Idea")
+      (h2 "Choose Your Abstractions." (br) "Sandboxed Security.")
+      (div ([class "features"])
+        (article ([class "feature"])
+          (p ([class "number"]) "01")
+          (h3 "Languages as Libraries")
+          (p "Hygienic macros and module hooks allow for new languages and DSLs, defined and imported like any "
+             "library and sandboxed at compile time."))
+        (article ([class "feature"])
+          (p ([class "number"]) "02")
+          (h3 "Choose Your Memory Model")
+          (p "Substrate has simple C-like memory management, which languages or DSLs can use to build their own "
+             "runtimes."))
+        (article ([class "feature"])
+          (p ([class "number"]) "03")
+          (h3 "Guard Against Supply-Chain Risk")
+          (p "Substrate packages and builds are deterministic and hash-identified. The build system and compiler are "
+             "sandboxed with no network access."))
+        (article ([class "feature"])
+          (p ([class "number"]) "04")
+          (h3 "Runs on the Web")
+          (p "Substrate compiles to Wasm and runs on any platform that supports it, including the web. This website "
+             "and its server are written in Substrate."))))))
+
+(view (examples)
+  (section ([id "examples"] [class "section"])
+    (div ([class "wrap"])
+      (h2 "Examples")
+      (div ([class "cards"])
+        (a ([class "card"] [href "https://github.com/substrate-lang/snake-game"])
+          (pre ([class "card-art"] [aria-hidden "true"])
+            "· · · · · · · · · · ·\n· ■ ■ ■ ■ ■ ▸ · · ● ·\n· ■ · · · · · · · · ·\n· ■ ■ · · · · · · · ·")
+          (h3 "Snake")
+          (p "The game, written in Substrate.")
+          (span ([class "more"]) "Source on GitHub ↗"))
+        (a ([class "card"] [href "https://github.com/substrate-lang/web-repl"])
+          (pre ([class "card-art"] [aria-hidden "true"])
+            "> (define (sq [x i32]) -> i32 (* x x))\n> (sq 7)\n49")
+          (h3 "REPL")
+          (p "An interactive Substrate REPL.")
+          (span ([class "more"]) "Source on GitHub ↗"))))))
+
+(view (playground-section)
+  (section ([id "playground"] [class "section"])
+    (div ([class "wrap"])
+      (h2 "Playground")
+      (p ([class "sub"])
+        "Edit the program and press Run. It is compiled and run in your browser, in a sandboxed worker beside this "
+        "page.")
+      (playground))))
+
+(view (faq)
+  (section ([id "faq"] [class "section"])
+    (div ([class "wrap"])
+      (h2 "FAQ")
+      (details
+        (summary "Why use Substrate over C, Rust, or Zig?")
+        (p "Maybe you shouldn't. But consider it if you want a fast, tiny toolchain (especially if you need the "
+           "compiler to run in the browser), or powerful compile-time metaprogramming for your domain (e.g. proving a "
+           "sort correct with dependent types)."))
+      (details
+        (summary "Are LLMs good at using Substrate?")
+        (p "We haven't done empirical studies, but frontier models understand C-like semantics extremely well and "
+           "seem to write small, performant code out of the box. They also understand Racket-style hygienic macros "
+           "for building languages. The Bend 2 port was built with LLMs without much difficulty."))
+      (details
+        (summary "Is Substrate ready for production?")
+        (p "Not yet. Substrate is experimental, and the language and its libraries may change before 1.0.")))))
+
+(view (site-footer)
+  (footer ([class "foot"])
+    (div ([class "wrap bar"])
+      (wordmark)
+      (a ([href "https://github.com/substrate-lang/substrate"]) "Read the source ↗"))))

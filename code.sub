@@ -1,0 +1,123 @@
+;; Substrate's syntax in color: code-tokenize! splits source into tokens, and code-view shows them as spans whose
+;; classes site.css colors.
+(require-unqualified web-ui)
+
+(provide code-tokens code-token code-tokenize! code-tokens-free! code-view token-plain token-comment token-text
+         token-number token-keyword token-type token-option token-punctuation)
+
+(const token-plain u32 0)
+(const token-comment u32 1)
+(const token-text u32 2)
+(const token-number u32 3)
+(const token-keyword u32 4)
+(const token-type u32 5)
+(const token-option u32 6)
+(const token-punctuation u32 7)
+
+(struct code-token [index u32] [start u32] [end u32] [kind u32])
+
+(struct code-tokens [items (ptr code-token)] [count u32] [room u32])
+
+(define keywords (array string 44)
+  (array-of string "define" "define-syntax" "define-macro" "begin-for-syntax" "let" "let*" "if" "when" "unless" "cond"
+            "case" "match" "else" "for" "while" "break" "continue" "return" "begin" "lambda" "set!" "struct" "variant"
+            "union" "enum" "const" "typedef" "and" "or" "not" "try" "catch" "throw" "require" "require-unqualified"
+            "runtime-require" "provide" "include-text" "component" "view" "messages" "attach" "syntax-match" "new"))
+
+(define types (array string 21)
+  (array-of string "i8" "u8" "i16" "u16" "i32" "u32" "i64" "u64" "f32" "f64" "bool" "string" "void" "ptr" "slice"
+            "array" "closure" "fn" "buffer" "arena" "datum"))
+
+(define (listed? [words (slice string)] [w string]) -> bool
+  (for ([i u32 0]) (< i (-> words length)) (+= i 1) (when (== (@ words i) w) (return #t)))
+  #f)
+
+(define (digit? [c u8]) -> bool (and (>= c 48) (<= c 57)))
+
+(define (number-word? [w string]) -> bool
+  (let ([n (-> w length)])
+    (or (and (> n 0) (digit? (@ w 0)))
+        (and (> n 1) (or (== (@ w 0) 45) (== (@ w 0) 43) (== (@ w 0) 46)) (digit? (@ w 1))))))
+
+(define (word-kind [w string]) -> u32
+  (cond [(and (>= (-> w length) 2) (== (@ w 0) 35) (== (@ w 1) 58)) token-option]
+        [(or (== w "#t") (== w "#f") (number-word? w)) token-number]
+        [(listed? (slice keywords) w) token-keyword]
+        [(listed? (slice types) w) token-type]
+        [else token-plain]))
+
+(define (delimiter? [c u8]) -> bool
+  (or (<= c 32) (== c 40) (== c 41) (== c 91) (== c 93) (== c 34) (== c 59)))
+
+(define (quote-mark? [c u8]) -> bool (or (== c 39) (== c 96) (== c 44)))
+
+(define (push![c (ptr code-tokens)] [start u32] [end u32] [kind u32])
+  (when (== start end) (return))
+  (when (and (== kind token-plain) (> (-> c count) 0))
+    (let ([last (+ (-> c items) (- (-> c count) 1))])
+      (when (== (-> last kind) token-plain)
+        (set! (-> last end) end)
+        (return))))
+  (when (== (-> c count) (-> c room))
+    (set! (-> c room) (if (== (-> c room) 0) 256 (* 2 (-> c room))))
+    (set! (-> c items) (cast (ptr code-token) (realloc (-> c items) (* (-> c room) (sizeof code-token))))))
+  (let ([t (+ (-> c items) (-> c count))])
+    (set! (-> t index) (-> c count))
+    (set! (-> t start) start)
+    (set! (-> t end) end)
+    (set! (-> t kind) kind)
+    (+= (-> c count) 1)))
+
+(define (code-tokenize! [c (ptr code-tokens)] [s string])
+  (set! (-> c count) 0)
+  (let ([n (-> s length)] [i u32 0])
+    (while (< i n)
+      (let ([ch (@ s i)] [start i])
+        (cond [(== ch 59)
+               (while (and (< i n) (!= (@ s i) 10)) (+= i 1))
+               (push! c start i token-comment)]
+              [(== ch 34)
+               (+= i 1)
+               (while (and (< i n) (!= (@ s i) 34))
+                 (when (and (== (@ s i) 92) (< (+ i 1) n)) (+= i 1))
+                 (+= i 1))
+               (when (< i n) (+= i 1))
+               (push! c start i token-text)]
+              [(<= ch 32)
+               (while (and (< i n) (<= (@ s i) 32)) (+= i 1))
+               (push! c start i token-plain)]
+              [(or (== ch 40) (== ch 41) (== ch 91) (== ch 93))
+               (+= i 1)
+               (push! c start i token-punctuation)]
+              [(and (== ch 35) (< (+ i 2) n) (== (@ s (+ i 1)) 92))
+               (+= i 3)
+               (while (and (< i n) (not (delimiter? (@ s i)))) (+= i 1))
+               (push! c start i token-number)]
+              [(or (quote-mark? ch) (and (== ch 35) (< (+ i 1) n) (quote-mark? (@ s (+ i 1)))))
+               (+= i (if (== ch 35) 2 1))
+               (when (and (< i n) (== (@ s i) 64)) (+= i 1))
+               (push! c start i token-punctuation)]
+              [else
+               (while (and (< i n) (not (delimiter? (@ s i)))) (+= i 1))
+               (push! c start i (word-kind (slice s start i)))])))))
+
+(define (code-tokens-free! [c (ptr code-tokens)])
+  (free (-> c items))
+  (set! (-> c items) 0)
+  (set! (-> c count) 0)
+  (set! (-> c room) 0))
+
+(define (token-class [kind u32]) -> string
+  (case kind
+    [(1) "c"]
+    [(2) "s"]
+    [(3) "n"]
+    [(4) "k"]
+    [(5) "t"]
+    [(6) "o"]
+    [(7) "p"]
+    [else ""]))
+
+(view (code-view [c (ptr code-tokens)] [s string])
+  (each [t (-> c items) (-> c count)] #:key (-> t index)
+    (span ([class (token-class (-> t kind))]) (text (slice s (-> t start) (-> t end))))))

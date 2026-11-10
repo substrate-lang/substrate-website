@@ -1,0 +1,61 @@
+;; The site's server: the site's files for the hosts allowed, with security headers, long caching for the program's
+;; files, whose names hold their hashes, and a redirect from www.HOST to HOST. serve.sub runs it.
+(require-unqualified std/http)
+(require-unqualified std/http/server)
+(require-unqualified std/http/static)
+(require-unqualified std/http/checks)
+
+(provide website website-init! website-handle website-policy website-cache)
+
+(define website-policy string
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+
+(struct website [server http-server] [files http-files] [hosts http-hosts] [security http-security]
+  [checks (array http-check 2)] [canonical string])
+
+(define (ends? [s string] [suffix string]) -> bool
+  (and (>= (-> s length) (-> suffix length)) (== (slice s (- (-> s length) (-> suffix length))) suffix)))
+
+(define (website-cache [path string]) -> string
+  (if (and (>= (-> path length) 8) (== (slice path 0 8) "program/") (or (ends? path ".wasm") (ends? path ".subc")))
+      "public, max-age=31536000, immutable"
+      ""))
+
+(define (host-name [r (ptr http-request)]) -> string
+  (let ([h (http-request-header r "host")] [end u32 0])
+    (while (and (< end (-> h length)) (!= (@ h end) #\:)) (+= end 1))
+    (slice h 0 end)))
+
+(define (www? [w (ptr website)] [r (ptr http-request)]) -> bool
+  (let ([name (host-name r)] [canonical (-> w canonical)])
+    (and (> (-> canonical length) 0) (== (-> name length) (+ (-> canonical length) 4))
+         (http-same? (slice name 0 4) "www.") (http-same? (slice name 4) canonical))))
+
+(define (website-handle [r (ptr http-request)])
+  (let ([w (cast (ptr website) (-> (http-request-server r) user))])
+    (if (www? w r)
+        (let ([to (make-buffer)])
+          (buffer-add-string! (& to) (if (http-request-https? r) "https://" "http://"))
+          (buffer-add-string! (& to) (-> w canonical))
+          (buffer-add-string! (& to) (-> r target))
+          (http-redirect! r 301 (buffer-string (& to)))
+          (buffer-free! (& to)))
+        (http-static! r (& (-> w files))))))
+
+(define (website-init! [w (ptr website)] [root string] [names (slice string)] [canonical string])
+  (memset w 0 (sizeof website))
+  (set! (-> w files root) root)
+  (set! (-> w files cache) website-cache)
+  (set! (-> w hosts names) names)
+  (set! (-> w hosts addresses) #t)
+  (set! (-> w security policy) website-policy)
+  (set! (-> w canonical) canonical)
+  (set! (-> (& (@ (-> w checks) 0)) run) http-hosts-check)
+  (set! (-> (& (@ (-> w checks) 0)) settings) (cast (ptr void) (& (-> w hosts))))
+  (set! (-> (& (@ (-> w checks) 1)) run) http-security-check)
+  (set! (-> (& (@ (-> w checks) 1)) settings) (cast (ptr void) (& (-> w security))))
+  (set! (-> w server checks) (slice (-> w checks)))
+  (set! (-> w server user) (cast (ptr void) w))
+  (set! (-> w server handle) website-handle)
+  (set! (-> w server compress) 6)
+  (set! (-> w server most) 1024))

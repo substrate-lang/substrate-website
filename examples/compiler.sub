@@ -1,0 +1,28 @@
+;; The compiler compiles itself, from the source this page carries in /src/substrate.
+(require-unqualified compiler/macros)
+(require-unqualified compiler/expander)
+(require-unqualified compiler/roots)
+(require-unqualified compiler/prune)
+(require-unqualified host/modules/clock)
+
+(provide compile-compiler!)
+
+(define (kib [bytes u32]) -> f64 (/ (nearbyint (/ (* (cast f64 bytes) 10.0) 1024.0)) 10.0))
+
+(define (stem [name string]) -> string
+  (for ([i u32 0]) (< i (-> name length)) (+= i 1) (when (== (@ name i) #\.) (return (slice name 0 i))))
+  name)
+
+(define (compile-compiler!)
+  (let ([start (clock-monotonic)] [total u32 0] [count u32 0])
+    (set-toolchain-directory! '"/src/substrate")
+    (install-core!)
+    (let ([modules (pruned (program-wasm-modules (compile-module-file 0 '"/src/substrate/compiler/main.sub")))]
+          [ms (- (clock-monotonic) start)])
+      (while (pair? modules)
+        (let ([name (datum->string (car (car modules)))] [size (-> (datum->bytes (cdr (car modules))) length)])
+          (printf "~a ~a KiB\n" (stem name) (kib size))
+          (+= total size)
+          (+= count 1)
+          (set! modules (cdr modules))))
+      (printf "\n~a modules, ~a KiB of Wasm, in ~a ms\n" count (kib total) (cast i32 ms)))))
