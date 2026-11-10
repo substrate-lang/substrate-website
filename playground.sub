@@ -222,6 +222,7 @@
   (unless (-> m running)
     (clear-output! m)
     (set! (-> m running) #t)
+    (set! (-> m broken) #f)
     (cond [(built-in? m) (start-compiler! m)]
           [(-> m runner-ready) (launch! m)]
           [else

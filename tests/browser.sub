@@ -27,7 +27,7 @@
 
 (test page
   (with-browser (b "website")
-    (expect-text b (by-css "h1") "A Language for Building Languages")
+    (expect-text b (by-css "h1") "A Lisp for Writing WebAssembly")
     (expect-attribute b (by-text "Try Substrate") "href" "#playground")
     (expect-attribute b (by-text "Compile the compiler!") "href" "#playground/compiler")
     (expect-text b (by-css ".panel .code") (include-text "../counter.sub"))

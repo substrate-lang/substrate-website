@@ -1,9 +1,5 @@
-(component (site)
-  #:state [s site-state]
-  (div ([class "site"])
-    (site-header)
-    (main (hero) (core-idea) (examples)
-          (playground-section) (faq))
-    (site-footer)))
+(require-unqualified std/web/dom)
 
-(attach ["root" (site)])
+(define (main)
+  (dom-add! (dom-template "<h1>Hello, world!</h1>") 0 0)
+  (dom-flush!))
