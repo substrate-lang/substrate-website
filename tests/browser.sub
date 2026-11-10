@@ -41,6 +41,7 @@
     (expect-text b (by-css ".counter output") "0")
     (expect-missing b (by-css ".counter .reset"))
     (expect-count b (by-css ".feature") 4)
+    (expect-count b (by-css ".feature .code") 4)
     (expect-count b (by-css "#faq details") 3)))
 
 (test examples
@@ -52,7 +53,8 @@
     (ran b "Variants" "point: 3, 4\nareas: 9, 42\nabove 4: 2, above 8: 1\n")
     (ran b "Macros" "x * 2 + y / 5 = 10\n(x + y) * (y - x) = 84\n")
     (ran b "JSON" "substrate 0.10.1 has 2 tags\n{\"name\":\"substrate\",\"version\":\"1.0.0\",\"tags\":[\"lisp\",\"wasm\"]}\n")
-    (ran b "Memory" "malloc: 7\narena: 1000 999 998\nbuffer: grows as needed\n")))
+    (ran b "Memory" "malloc: 7\narena: 1000 999 998\nbuffer: grows as needed\n")
+    (ran b "Bend 2" "(S (S (S Z)))\n")))
 
 (test compiler
   (with-browser (b "website")

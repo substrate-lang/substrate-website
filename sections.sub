@@ -8,17 +8,20 @@
 
 (define counter-source string (include-text "counter.sub"))
 
-(define (panel-init [c (ptr code-tokens)] [name string] [source string]) (code-tokenize! c source))
+(define (snippet-init [c (ptr code-tokens)] [source string]) (code-tokenize! c source))
 
-(component (code-panel [name string] [source string])
+(component (snippet [source string])
   #:state [c code-tokens]
-  #:init panel-init
+  #:init snippet-init
   #:free code-tokens-free!
+  (pre ([class "code"]) (code-view c source)))
+
+(view (code-panel [name string] [source string])
   (div ([class "panel"])
     (div ([class "panel-bar"])
       (span ([class "panel-name"]) (text name))
       (span ([class "panel-lang"]) "Substrate"))
-    (pre ([class "code"]) (code-view c source))))
+    (snippet ([source source]))))
 
 (view (wordmark)
   (a ([class "wordmark"] [href "#top"]) "substrate" (span ([class "cursor"] [aria-hidden "true"]))))
@@ -45,7 +48,7 @@
           (a ([class "button primary"] [href "#playground"]) "Try Substrate")
           (a ([class "button"] [href "#playground/compiler"]) "Compile the compiler!")))
       (figure ([class "hero-code"])
-        (code-panel ([name "counter.sub"] [source counter-source]))
+        (code-panel "counter.sub" counter-source)
         (div ([class "live"])
           (span ([class "live-label"]) "live")
           (counter))
@@ -56,29 +59,32 @@
 (view (core-idea)
   (section ([id "why"] [class "section"])
     (div ([class "wrap"])
-      (p ([class "label"]) "The Core Idea")
       (h2 "Choose Your Abstractions." (br) "Sandboxed Security.")
       (div ([class "features"])
         (article ([class "feature"])
           (p ([class "number"]) "01")
           (h3 "Languages as Libraries")
           (p "Hygienic macros and module hooks allow for new languages and DSLs, defined and imported like any "
-             "library and sandboxed at compile time."))
+             "library and sandboxed at compile time.")
+          (snippet ([source (include-text "snippets/languages.txt")])))
         (article ([class "feature"])
           (p ([class "number"]) "02")
           (h3 "Choose Your Memory Model")
           (p "Substrate has simple C-like memory management, which languages or DSLs can use to build their own "
-             "runtimes."))
+             "runtimes.")
+          (snippet ([source (include-text "snippets/memory.txt")])))
         (article ([class "feature"])
           (p ([class "number"]) "03")
           (h3 "Guard Against Supply-Chain Risk")
           (p "Substrate packages and builds are deterministic and hash-identified. The build system and compiler are "
-             "sandboxed with no network access."))
+             "sandboxed with no network access.")
+          (snippet ([source (include-text "snippets/packages.txt")])))
         (article ([class "feature"])
           (p ([class "number"]) "04")
           (h3 "Runs on the Web")
           (p "Substrate compiles to Wasm and runs on any platform that supports it, including the web. This website "
-             "and its server are written in Substrate."))))))
+             "and its server are written in Substrate.")
+          (snippet ([source (include-text "snippets/web.txt")])))))))
 
 (view (examples)
   (section ([id "examples"] [class "section"])

@@ -7,7 +7,7 @@
 (require-unqualified host/worker)
 (require-unqualified host/events)
 (require-unqualified host/modules/clock)
-(runtime-require compiler/substrate compiler/macros std/encoding/json)
+(runtime-require compiler/substrate compiler/macros std/encoding/json bend2)
 
 (provide runner-main)
 

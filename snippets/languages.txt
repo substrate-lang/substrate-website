@@ -1,0 +1,9 @@
+(language bend2)
+
+(type N Data [Z] [S [p : N]])
+
+(law (add [a : N] [b : N]) N)
+(def (add a b)
+  (match a
+    [Z b]
+    [(S p) (S (add p b))]))

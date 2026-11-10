@@ -1,0 +1,6 @@
+(package website
+  (version "0.1.0")
+  (dependencies
+   (web-ui
+    (url "https://github.com/substrate-lang/web-ui/archive/refs/tags/v0.10.1.tar.gz")
+    (hash "sha256:872f00ec61c285b39e6d81b37f37a8dffa515dcf445468d829432c0d2f59bdf3"))))

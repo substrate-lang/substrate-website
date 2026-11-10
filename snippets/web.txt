@@ -1,0 +1,9 @@
+(component (site)
+  #:state [s site-state]
+  (div ([class "site"])
+    (site-header)
+    (main (hero) (core-idea) (examples)
+          (playground-section) (faq))
+    (site-footer)))
+
+(attach ["root" (site)])

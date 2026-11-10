@@ -16,9 +16,9 @@
 
 (struct example [index u32] [slug string] [label string] [source string] [built-in bool])
 
-(const example-count u32 6)
+(const example-count u32 7)
 
-(define examples (array example 6))
+(define examples (array example 7))
 
 (define (example! [i u32] [slug string] [label string] [source string] [built-in bool])
   (set! (@ examples i) (example #:index i #:slug slug #:label label #:source source #:built-in built-in)))
@@ -29,7 +29,8 @@
   (example! 2 "macros" "Macros" (include-text "examples/macros.sub") #f)
   (example! 3 "json" "JSON" (include-text "examples/json.sub") #f)
   (example! 4 "memory" "Memory" (include-text "examples/memory.sub") #f)
-  (example! 5 "compiler" "Compile the compiler" (include-text "examples/compiler.sub") #t))
+  (example! 5 "bend2" "Bend 2" (include-text "examples/bend2.sub") #f)
+  (example! 6 "compiler" "Compile the compiler" (include-text "examples/compiler.sub") #t))
 
 (define (starts? [s string] [prefix string]) -> bool
   (and (>= (-> s length) (-> prefix length)) (== (slice s 0 (-> prefix length)) prefix)))
