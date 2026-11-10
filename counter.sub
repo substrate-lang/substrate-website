@@ -1,9 +1,6 @@
 (require-unqualified web-ui)
 
-(provide counter)
-
 (struct state [count i32])
-
 (variant message [increment] [decrement] [reset])
 
 (define (update [s (ptr state)] [m (ptr message)])
@@ -22,3 +19,5 @@
     (button ([on click increment]) "+")
     (when (!= (-> s count) 0)
       (button ([class "reset"] [on click reset]) "reset"))))
+
+(provide counter)

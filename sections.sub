@@ -6,7 +6,11 @@
 
 (provide site-header hero core-idea examples playground-section faq site-footer)
 
-(define counter-source string (include-text "counter.sub"))
+(define (without-provide [s string]) -> string
+  (let ([mark "\n(provide counter)"])
+    (for ([i u32 0]) (<= (+ i (-> mark length)) (-> s length)) (+= i 1)
+      (when (== (slice s i (+ i (-> mark length))) mark) (return (slice s 0 i))))
+    s))
 
 (define (snippet-init [c (ptr code-tokens)] [source string]) (code-tokenize! c source))
 
@@ -15,6 +19,15 @@
   #:init snippet-init
   #:free code-tokens-free!
   (pre ([class "code"]) (code-view c source)))
+
+(define (line-end [s string]) -> u32
+  (for ([i u32 0]) (< i (-> s length)) (+= i 1) (when (== (@ s i) 10) (return i)))
+  (-> s length))
+
+(view (console [s string])
+  (pre ([class "code console"])
+    (span ([class "command"]) (text (slice s 0 (line-end s))))
+    (text (slice s (line-end s)))))
 
 (view (code-panel [name string] [source string])
   (div ([class "panel"])
@@ -40,7 +53,7 @@
   (section ([id "top"] [class "hero"])
     (div ([class "wrap hero-grid"])
       (div ([class "hero-copy"])
-        (h1 "A Lisp for Writing " (span ([class "accent"]) "WebAssembly"))
+        (h1 "A Lisp for " (span ([class "accent"]) "Wasm"))
         (p ([class "lede"])
           "Substrate has C-like semantics combined with Racket-style hygienic macros for defining new languages and "
           "DSLs. Its compiler is self-hosted, fast, and runs in the browser.")
@@ -48,7 +61,7 @@
           (a ([class "button primary"] [href "#playground"]) "Try Substrate")
           (a ([class "button"] [href "#playground/compiler"]) "Compile the compiler!")))
       (figure ([class "hero-code"])
-        (code-panel "counter.sub" counter-source)
+        (code-panel "counter.sub" (without-provide (include-text "counter.sub")))
         (div ([class "live"])
           (span ([class "live-label"]) "live")
           (counter))
@@ -69,7 +82,7 @@
           (snippet ([source (include-text "snippets/languages.txt")])))
         (article ([class "feature"])
           (p ([class "number"]) "02")
-          (h3 "Choose your memory model")
+          (h3 "Flexible memory model")
           (p "Substrate has simple C-like memory management, but languages or DSLs can build their own memory-safe "
              "runtimes.")
           (snippet ([source (include-text "snippets/memory.txt")])))
@@ -78,7 +91,7 @@
           (h3 "Reduce supply-chain risk")
           (p "Substrate packages and builds are deterministic and hash-identified. The build system and compiler are "
              "sandboxed with no network access.")
-          (snippet ([source (include-text "snippets/packages.txt")])))
+          (console (include-text "snippets/packages.txt")))
         (article ([class "feature"])
           (p ([class "number"]) "04")
           (h3 "Runs on the web")

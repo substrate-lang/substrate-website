@@ -3,3 +3,6 @@
 (define (main)
   (dom-add! (dom-template "<h1>Hello, world!</h1>") 0 0)
   (dom-flush!))
+
+;; build it with substrate site page.sub, then
+;; run it with substrate serve build/sites/page

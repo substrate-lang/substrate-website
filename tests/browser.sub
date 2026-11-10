@@ -20,6 +20,9 @@
   (browser-press! b "Control+a")
   (browser-type! b (by-css ".pg-input") program))
 
+(define counter-file string (include-text "../counter.sub"))
+(define provided string "\n(provide counter)\n")
+
 (define (failed-with [b browser] [text string])
   (finished b)
   (expect-text b (by-css ".pg-state") "Failed")
@@ -27,10 +30,11 @@
 
 (test page
   (with-browser (b "website")
-    (expect-text b (by-css "h1") "A Lisp for Writing WebAssembly")
+    (expect-text b (by-css "h1") "A Lisp for Wasm")
     (expect-attribute b (by-text "Try Substrate") "href" "#playground")
     (expect-attribute b (by-text "Compile the compiler!") "href" "#playground/compiler")
-    (expect-text b (by-css ".panel .code") (include-text "../counter.sub"))
+    (expect-equal (slice counter-file (- (-> counter-file length) (-> provided length))) provided)
+    (expect-text b (by-css ".panel .code") (slice counter-file 0 (- (-> counter-file length) (-> provided length))))
     (expect-count b (within (by-css ".panel .code") (by-text "component")) 1)
     (expect-attribute b (within (by-css ".panel .code") (by-text "component")) "class" "k")
     (expect-text b (by-css ".counter output") "0")
