@@ -30,7 +30,7 @@
 
 (test page
   (with-browser (b "website")
-    (expect-text b (by-css "h1") "A Lisp for Wasm")
+    (expect-text b (by-css "h1") "A Lisp for WebAssembly")
     (expect-attribute b (by-text "Try Substrate") "href" "#playground")
     (expect-attribute b (by-text "Compile the compiler!") "href" "#playground/compiler")
     (expect-equal (slice counter-file (- (-> counter-file length) (-> provided length))) provided)

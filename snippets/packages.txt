@@ -1,3 +1,3 @@
-$ substrate build page.sub
+$ substrate fetch …/web-ui/archive/refs/tags/v0.10.1.tar.gz
 substrate: fetching …/web-ui/archive/refs/tags/v0.10.1.tar.gz
-substrate: fetching …/web-ui/archive/refs/tags/v0.10.1.tar.gz: it has the hash sha256:872f00ec…, not the one its dependency pins, sha256:d7190bd9…
+(web-ui (url "…/web-ui/archive/refs/tags/v0.10.1.tar.gz") (hash "sha256:872f00ec…"))

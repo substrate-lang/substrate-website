@@ -1,5 +1,4 @@
-;; prove properties of code with a dependently typed language,
-;; here, a port of Bend 2, proving 0 + b = b for every b
+;; prove properties of code with a dependently typed language
 (language bend2)
 
 (type N Data [Z] [S [p : N]])
@@ -11,4 +10,4 @@
     [(S p) (S (add p b))]))
 
 (law (zero_add [b : N]) (== (add Z b) b N))
-(def (zero_add b) refl)
+(def (zero_add b) refl) ; 0 + b = b for every b

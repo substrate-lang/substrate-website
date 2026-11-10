@@ -53,7 +53,7 @@
   (section ([id "top"] [class "hero"])
     (div ([class "wrap hero-grid"])
       (div ([class "hero-copy"])
-        (h1 "A Lisp for " (span ([class "accent"]) "Wasm"))
+        (h1 "A Lisp for " (span ([class "accent"]) "WebAssembly"))
         (p ([class "lede"])
           "Substrate has C-like semantics combined with Racket-style hygienic macros for defining new languages and "
           "DSLs. Its compiler is self-hosted, fast, and runs in the browser.")
@@ -94,9 +94,9 @@
           (console (include-text "snippets/packages.txt")))
         (article ([class "feature"])
           (p ([class "number"]) "04")
-          (h3 "Runs on the web")
+          (h3 "Runs on any platform")
           (p "Substrate compiles to Wasm and runs on any platform that supports it, including the web. This website "
-             "and its server are written in Substrate.")
+             "and the server that serves it are written in Substrate.")
           (snippet ([source (include-text "snippets/web.txt")])))))))
 
 (view (examples)
