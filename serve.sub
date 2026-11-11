@@ -1,7 +1,8 @@
-;; serve [-l ADDRESS] [-t] [-c HOST] DIR [PORT] serves the site in DIR on ADDRESS (127.0.0.1) and PORT (8000), over TLS
-;; with -t, with the certificate and key that substrate run's --tls-cert and --tls-key grant. -c HOST adds HOST and
-;; www.HOST to localhost as the names allowed, and www.HOST redirects to HOST. It logs requests to stderr and prints
-;; its URL once it listens. Ctrl-C finishes the requests in progress, then exits.
+;; serve [-l ADDRESS] [-t] [-c HOST] [-p HOPS] DIR [PORT] serves the site in DIR on ADDRESS (127.0.0.1) and PORT (8000),
+;; over TLS with -t, with the certificate and key that substrate run's --tls-cert and --tls-key grant. -c HOST adds HOST
+;; and www.HOST to localhost as the names allowed, and www.HOST redirects to HOST. Behind proxies, -p HOPS believes
+;; that many hops of their X-Forwarded headers. It logs requests to stderr and prints its URL once it listens. Ctrl-C
+;; finishes the requests in progress, then exits.
 (require-unqualified std/http)
 (require-unqualified std/http/server)
 (require-unqualified "server.sub")
@@ -28,16 +29,17 @@
 
 (define (main)
   (let* ([args (host-args)] [n (-> args length)] [at u32 0] [address "127.0.0.1"] [secure #f] [canonical ""]
-         [port i64 8000] [ok #t] [count u32 1])
+         [port i64 8000] [hops i64 0] [ok #t] [count u32 1])
     (while (and ok (< at n) (> (-> (@ args at) length) 0) (== (@ (@ args at) 0) 45))
       (let ([flag (@ args at)])
         (cond [(and (== flag "-l") (< (+ at 1) n)) (set! address (@ args (+ at 1))) (+= at 2)]
               [(== flag "-t") (set! secure #t) (+= at 1)]
               [(and (== flag "-c") (< (+ at 1) n)) (set! canonical (@ args (+ at 1))) (+= at 2)]
+              [(and (== flag "-p") (< (+ at 1) n)) (set! hops (http-decimal (@ args (+ at 1)))) (+= at 2)]
               [else (set! ok #f)])))
     (when (== (+ at 2) n) (set! port (http-decimal (@ args (+ at 1)))))
-    (when (or (not ok) (< (- n at) 1) (> (- n at) 2) (< port 0) (> port 65535))
-      (host-write 2 (cast (slice u8) "usage: serve [-l ADDRESS] [-t] [-c HOST] DIR [PORT]\n"))
+    (when (or (not ok) (< (- n at) 1) (> (- n at) 2) (< port 0) (> port 65535) (< hops 0))
+      (host-write 2 (cast (slice u8) "usage: serve [-l ADDRESS] [-t] [-c HOST] [-p HOPS] DIR [PORT]\n"))
       (host-exit 64 ""))
     (set! (@ names 0) ".localhost")
     (when (> (-> canonical length) 0)
@@ -50,6 +52,7 @@
     (website-init! (& w) (@ args at) (slice (slice names) 0 count) canonical)
     (set! (-> w server host) address)
     (set! (-> w server secure) secure)
+    (set! (-> w server proxies) (cast u32 hops))
     (set! (-> w server on-done) http-log-access)
     (set! (-> w server listening) listening)
     (http-stop-on-signals! (& (-> w server)) 5000.0 0)

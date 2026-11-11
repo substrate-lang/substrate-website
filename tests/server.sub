@@ -31,3 +31,12 @@
   (expect-equal (got "/" "localhost:8000") 200)
   (expect-equal (got "/" "127.0.0.1:8000") 200)
   (expect-equal (got "/" "example.com") 403))
+
+(test server-proxied
+  (website-init! (& w) "tests/site" (slice names) "substrate-lang.com")
+  (set! (-> w server proxies) 1)
+  (expect (http-test! (& t) (& (-> w server)) "GET" "/"
+                      (slice (array-of string "host" "www.substrate-lang.com" "x-forwarded-proto" "https"))
+                      (cast (slice u8) "")))
+  (expect-equal (http-test-status (& t)) 301)
+  (expect-equal (http-test-header (& t) "location") "https://substrate-lang.com/"))
