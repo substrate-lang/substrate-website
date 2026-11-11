@@ -19,11 +19,21 @@
   (expect-equal (http-test-header (& t) "x-content-type-options") "nosniff"))
 
 (test server-program
-  (expect-equal (got "/program/page.0123456789ab@0+0.wasm" "substrate-lang.com") 200)
+  (expect-equal (got "/0123456789abcdef/program/site.0123456789ab@0+0.wasm" "substrate-lang.com") 200)
   (expect-equal (http-test-header (& t) "content-type") "application/wasm")
   (expect-equal (http-test-header (& t) "cache-control") "public, max-age=31536000, immutable")
-  (expect-equal (got "/program/program" "substrate-lang.com") 200)
+  (expect-equal (got "/index.html" "substrate-lang.com") 200)
   (expect-equal (http-test-header (& t) "cache-control") "no-cache"))
+
+(test server-zipped
+  (website-init! (& w) "tests/site" (slice names) "substrate-lang.com")
+  (expect (http-test! (& t) (& (-> w server)) "GET" "/0123456789abcdef/host/web/start.mjs"
+                      (slice (array-of string "host" "substrate-lang.com" "accept-encoding" "gzip"))
+                      (cast (slice u8) "")))
+  (expect-equal (http-test-status (& t)) 200)
+  (expect-equal (http-test-header (& t) "content-encoding") "gzip")
+  (expect-equal (http-test-header (& t) "vary") "accept-encoding")
+  (expect-equal (http-test-header (& t) "cache-control") "public, max-age=31536000, immutable"))
 
 (test server-hosts
   (expect-equal (got "/?a=1" "www.substrate-lang.com") 301)

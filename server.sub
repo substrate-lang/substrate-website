@@ -1,25 +1,18 @@
-;; The site's server: the site's files for the hosts allowed, with security headers, long caching for the program's
-;; files, whose names hold their hashes, and a redirect from www.HOST to HOST. serve.sub runs it.
+;; The site's server: the site's files for the hosts allowed, with security headers, long caching for the files whose
+;; paths hold their hashes, as substrate site --release writes them, and a redirect from www.HOST to HOST. serve.sub runs
+;; it.
 (require-unqualified std/http)
 (require-unqualified std/http/server)
 (require-unqualified std/http/static)
 (require-unqualified std/http/checks)
 
-(provide website website-init! website-handle website-policy website-cache)
+(provide website website-init! website-handle website-policy)
 
 (define website-policy string
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
 (struct website [server http-server] [files http-files] [hosts http-hosts] [security http-security]
   [checks (array http-check 2)] [canonical string])
-
-(define (ends? [s string] [suffix string]) -> bool
-  (and (>= (-> s length) (-> suffix length)) (== (slice s (- (-> s length) (-> suffix length))) suffix)))
-
-(define (website-cache [path string]) -> string
-  (if (and (>= (-> path length) 8) (== (slice path 0 8) "program/") (or (ends? path ".wasm") (ends? path ".subc")))
-      "public, max-age=31536000, immutable"
-      ""))
 
 (define (host-name [r (ptr http-request)]) -> string
   (let ([h (http-request-header r "host")] [end u32 0])
@@ -45,7 +38,7 @@
 (define (website-init! [w (ptr website)] [root string] [names (slice string)] [canonical string])
   (memset w 0 (sizeof website))
   (set! (-> w files root) root)
-  (set! (-> w files cache) website-cache)
+  (set! (-> w files cache) http-hashed-cache)
   (set! (-> w hosts names) names)
   (set! (-> w hosts addresses) #t)
   (set! (-> w security policy) website-policy)
