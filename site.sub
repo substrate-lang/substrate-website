@@ -1,0 +1,17 @@
+;; substrate-lang.com: the sections of sections.sub, in the document's root element.
+(require-unqualified web-ui)
+(require-unqualified "sections.sub")
+
+(view (site)
+  #:style (include-text "site.css")
+  (div ([class "site"])
+    (site-header)
+    (main
+      (hero)
+      (core-idea)
+      (examples)
+      (playground-section)
+      (faq))
+    (site-footer)))
+
+(attach ["root" (site)])

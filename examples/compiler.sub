@@ -1,4 +1,4 @@
-;; The compiler compiles itself, from the source this page carries in /src/substrate.
+;; The compiler compiles itself, from the source this site carries in /src/substrate.
 (require-unqualified compiler/macros)
 (require-unqualified compiler/expander)
 (require-unqualified compiler/roots)

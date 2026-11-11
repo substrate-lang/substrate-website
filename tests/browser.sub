@@ -1,4 +1,4 @@
-;; The page and its playground in Chromium, used as a visitor would.
+;; The site and its playground in Chromium, used as a visitor would.
 (require-unqualified std/test/browser)
 (require-unqualified std/test/test)
 (require-unqualified std/http)
@@ -28,7 +28,7 @@
   (expect-text b (by-css ".pg-state") "Failed")
   (expect-count b (by-text-containing text) 1))
 
-(test page
+(test site
   (with-browser (b "website")
     (expect-text b (by-css "h1") "A Lisp for WebAssembly")
     (expect-attribute b (by-text "Try Substrate") "href" "#playground")

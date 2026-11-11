@@ -1,5 +1,5 @@
 ;; The playground: an editor for a program, a console for its output, and examples to start from. Programs run on
-;; workers beside the page (runner.sub and examples/compiler.sub), and the URL's #playground/name names the example
+;; workers beside the web program (runner.sub and examples/compiler.sub), and the URL's #playground/name names the example
 ;; shown.
 (require-unqualified web-ui)
 (require-unqualified host/worker)

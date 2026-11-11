@@ -1,4 +1,4 @@
-;; The page's sections, top to bottom.
+;; The site's sections, top to bottom.
 (require-unqualified web-ui)
 (require-unqualified "code.sub")
 (require-unqualified "counter.sub")
