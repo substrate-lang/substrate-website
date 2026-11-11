@@ -46,7 +46,7 @@
     (expect-missing b (by-css ".counter .reset"))
     (expect-count b (by-css ".feature") 4)
     (expect-count b (by-css ".feature .code") 4)
-    (expect-count b (by-css "#faq details") 3)))
+    (expect-count b (by-css "#faq details") 4)))
 
 (test examples
   (with-browser (b "website")

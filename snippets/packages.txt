@@ -1,3 +1,0 @@
-$ substrate fetch …/web-ui/archive/refs/tags/v0.10.1.tar.gz
-substrate: fetching …/web-ui/archive/refs/tags/v0.10.1.tar.gz
-(web-ui (url "…/web-ui/archive/refs/tags/v0.10.1.tar.gz") (hash "sha256:872f00ec…"))

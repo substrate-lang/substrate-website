@@ -1,0 +1,2 @@
+$ substrate run upload.sub
+fetch: example.com is not granted (--allow-net)

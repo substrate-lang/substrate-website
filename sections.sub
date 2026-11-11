@@ -72,7 +72,7 @@
 (view (core-idea)
   (section ([id "why"] [class "section"])
     (div ([class "wrap"])
-      (h2 "Choose your abstractions." (br) "Sandboxed security.")
+      (h2 "Domain-specific abstractions." (br) "Sandboxed security.")
       (div ([class "features"])
         (article ([class "feature"])
           (p ([class "number"]) "01")
@@ -88,10 +88,10 @@
           (snippet ([source (include-text "snippets/memory.txt")])))
         (article ([class "feature"])
           (p ([class "number"]) "03")
-          (h3 "Reduce supply-chain risk")
-          (p "Substrate packages and builds are deterministic and hash-identified. The build system and compiler are "
-             "sandboxed with no network access.")
-          (console (include-text "snippets/packages.txt")))
+          (h3 "Run code safely")
+          (p "Substrate programs are sandboxed by default and can only access your filesystem and network when and how "
+             "you allow them. The build system and compiler are also sandboxed.")
+          (console (include-text "snippets/sandbox.txt")))
         (article ([class "feature"])
           (p ([class "number"]) "04")
           (h3 "Runs on any platform")
@@ -132,17 +132,28 @@
       (h2 "FAQ")
       (details
         (summary "Why use Substrate over C, Rust, or Zig?")
-        (p "Maybe you shouldn't. But consider it if you want a fast, tiny toolchain (especially if you need the "
-           "compiler to run in the browser), or powerful compile-time metaprogramming for your domain (e.g. proving a "
-           "sort correct with dependent types)."))
+        (p "These languages are all great in various ways, and they all compile to Wasm. It probably makes most "
+           "sense to consider Substrate if you want a fast, tiny toolchain (especially if you need the compiler to "
+           "run in the browser) or powerful compile-time metaprogramming for your domain."))
       (details
         (summary "Are LLMs good at using Substrate?")
-        (p "We haven't done empirical studies, but frontier models understand C-like semantics extremely well and "
-           "seem to write small, performant code out of the box. They also understand Racket-style hygienic macros "
-           "for building languages. The Bend 2 port was built with LLMs without much difficulty."))
+        (p "Frontier models are very familiar with C semantics and appear to write performant s-expression-style C "
+           "with very few errors. They also understand Racket-style hygienic macros for building languages. The Bend 2 "
+           "port was built with LLMs with no hand-holding required. It helps that the entire compiler fits into the "
+           "context window of a large model."))
       (details
         (summary "Is Substrate ready for production?")
-        (p "Not yet. Substrate is experimental, and the language and its libraries may change before 1.0.")))))
+        (p "It depends on your application. The compiler core itself has been extensively tested, and perhaps more "
+           "importantly, dogfooded, via building itself and all of Substrate's infrastructure. Other parts of the "
+           "language and libraries are less battle-tested. Substrate is also pre-1.0, so aspects of the language may "
+           "change, though the compiler core itself is small (<12k lines of code) and should remain fairly stable."))
+      (details
+        (summary "Why a language like Substrate now?")
+        (p "The future of programming in the era of LLMs is a question many have been thinking about. We believe "
+           "WebAssembly will play an important role in this future from a portability and security standpoint. "
+           "Substrate is a meta-bet in this area. As a Lisp inspired by Racket, it allows us to quickly develop new "
+           "languages on top of Wasm, whether we want something dependently typed that can help with high level "
+           "verification, or something closer to the metal.")))))
 
 (view (site-footer)
   (footer ([class "foot"])
