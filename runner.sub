@@ -7,7 +7,7 @@
 (require-unqualified host/events)
 (require-unqualified host/modules/clock)
 (require-unqualified std/encoding/wire)
-(runtime-require compiler/substrate compiler/macros std/encoding/json bend2)
+(runtime-require compiler/substrate compiler/macros)
 
 (provide runner-main answer ran failed answer.wire-read)
 
@@ -25,6 +25,8 @@
   (set! program (make-buffer))
   (event-handler! worker-source heard)
   (trap-handler! trapped)
+  (set-toolchain-directory! '"/src/substrate")
+  (set-module-map-text! (file-text '"/src/session.map") '"/src/session.map")
   (session-open! '"main.sub"))
 
 (define (heard [source u32] [kind u32] [w u32] [tag (ptr void)] [value i32])

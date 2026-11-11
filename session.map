@@ -1,0 +1,3 @@
+(uses (std std) (bend2 bend2))
+(root std "/src/std")
+(root bend2 "/src/bend2")
