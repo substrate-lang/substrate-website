@@ -97,6 +97,22 @@
     (finished b)
     (output b "in\n")))
 
+(define (with-newline [s string]) -> string
+  (let ([b (make-buffer)])
+    (buffer-add-string! (& b) s)
+    (buffer-add-byte! (& b) 10)
+    (buffer-string (& b))))
+
+(test undoing
+  (with-browser (b "website")
+    (rewrite b "(define (main)")
+    (browser-press! b "Enter")
+    (expect-value b (by-css ".pg-input") "(define (main)\n")
+    (browser-press! b "Control+z")
+    (let ([undone (browser-value b (by-css ".pg-input"))])
+      (expect (!= undone "(define (main)\n"))
+      (expect-text b (by-css ".pg-highlight") (with-newline undone)))))
+
 (test errors
   (with-browser (b "website")
     (rewrite b "(define (main) (nope))")

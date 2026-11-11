@@ -63,11 +63,11 @@
   [output buffer] [cut bool] [error string]
   [runner u32] [runner-ready bool] [worker u32] [running bool] [waiting bool] [began f64]
   [status string] [tone u32] [broken bool]
-  [tag (ptr void)] [scroll u32] [panel u32] [input u32])
+  [tag (ptr void)] [scroll u32] [panel u32])
 
 (variant message
   [edited [text string]]
-  [key-pressed [key string] [control bool] [meta bool] [shift bool] [start f64] [end f64]]
+  [key-pressed [key string] [control bool] [meta bool] [shift bool] [start f64]]
   [run] [stop] [reset] [clear]
   [choose [index u32]]
   [hash-changed]
@@ -271,36 +271,28 @@
       (+= start 1))
     (buffer-string (& b))))
 
-;; inserted! puts text, which is ASCII, in place of the editor's selection from start to end, with the cursor after it.
-;; The cursor moves once the drawing has given the editor its new text.
-(define (inserted! [m (ptr model)] [text string] [start f64] [end f64])
-  (let* ([code (-> m code)] [from (byte-at code (cast u32 start))] [to (byte-at code (cast u32 end))] [b (make-buffer)]
-         [cursor (+ start (cast f64 (-> text length)))])
-    (buffer-add-string! (& b) (slice code 0 from))
-    (buffer-add-string! (& b) text)
-    (buffer-add-string! (& b) (slice code to (-> code length)))
-    (set-code! m (buffer-string (& b)))
-    (set! (-> m edited) #t)
-    (dom-call-with! (-> m input) "setSelectionRange" (slice (array-of dom-value (dom-number cursor) (dom-number cursor))))
-    (buffer-free! (& b))))
+;; inserted! puts text in place of the editor's selection, as typing it would.
+(define (inserted! [text string])
+  (dom-call-with! dom-document "execCommand"
+                  (slice (array-of dom-value (dom-text "insertText") (dom-number 0.0) (dom-text text)))))
 
 (define (update [m (ptr model)] [e (ptr message)])
   (match e
     [(edited text)
      (set-code! m text)
      (set! (-> m edited) #t)]
-    [(key-pressed key control meta shift start end)
+    [(key-pressed key control meta shift start)
      (cond [(and (== key "Enter") (or control meta))
             (prevent-default!)
             (run! m)]
            [(or control meta (built-in? m)) (begin)]
            [(and (== key "Tab") (not shift))
             (prevent-default!)
-            (inserted! m "  " start end)]
+            (inserted! "  ")]
            [(== key "Enter")
             (prevent-default!)
             (let ([text (line-break (-> m code) (byte-at (-> m code) (cast u32 start)))])
-              (inserted! m text start end)
+              (inserted! text)
               (free (-> text bytes)))])]
     [run (run! m)]
     [stop (stop! m)]
@@ -393,10 +385,9 @@
             (pre ([class "code pg-highlight"] [aria-hidden "true"]) (code-view (& (-> m tokens)) (-> m code)) "\n")
             (textarea ([class "pg-input"] [value (-> m code)] [readonly (built-in? m)] [spellcheck "false"]
                        [autocapitalize "off"] [autocomplete "off"] [wrap "off"] [aria-label "Program"]
-                       [node (-> m input)] [on input (edited (event value))]
+                       [on input (edited (event value))]
                        [on keydown (key-pressed (event key) (event control) (event meta) (event shift)
-                                                (event-number "target.selectionStart")
-                                                (event-number "target.selectionEnd"))])))))
+                                                (event-number "target.selectionStart"))])))))
       (div ([class "pg-console"])
         (div ([class "pg-head"])
           (span "Console")
