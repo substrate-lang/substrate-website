@@ -11,7 +11,6 @@
 
 (provide runner-main answer ran failed answer.wire-read)
 
-;; How a program went: the times its compiling and running took, in ms, or the error.
 (variant answer [ran [compile-ms f64] [run-ms f64]] [failed [error string]])
 
 (wire answer)

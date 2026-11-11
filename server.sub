@@ -1,5 +1,5 @@
-;; The site's server: the site's files for the hosts allowed, with security headers, long caching for the files whose
-;; paths hold their hashes, as substrate site --release writes them, and a redirect from www.HOST to HOST. serve.sub runs
+;; The site's server: the site's files for the hosts allowed, with security headers and a redirect from www.HOST to
+;; HOST. Files whose paths hold a hash, as substrate site --release writes them, are cached for a year. serve.sub runs
 ;; it.
 (require-unqualified std/http)
 (require-unqualified std/http/server)

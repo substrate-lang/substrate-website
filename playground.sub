@@ -250,7 +250,7 @@
 
 (define (scroll-heard [source u32] [kind u32] [id u32] [tag (ptr void)] [value i32]) (send! (scroll-to)))
 
-;; The byte of s where an offset in the editor, which counts UTF-16 units, falls.
+;; byte-at gives the byte of s at an offset from the editor, which counts in UTF-16 units.
 (define (byte-at [s string] [units u32]) -> u32
   (let ([i u32 0] [n u32 0])
     (while (and (< i (-> s length)) (< n units))
@@ -261,7 +261,6 @@
               [else (+= i 4) (+= n 2)])))
     (if (> i (-> s length)) (-> s length) i)))
 
-;; What Enter puts in at the byte at: a line break, and the spaces that begin the line there.
 (define (line-break [code string] [at u32]) -> string
   (let ([start at] [b (make-buffer)])
     (while (and (> start 0) (!= (@ code (- start 1)) 10)) (-= start 1))

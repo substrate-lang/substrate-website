@@ -1,8 +1,8 @@
 ;; serve [-l ADDRESS] [-t] [-c HOST] [-p HOPS] DIR [PORT] serves the site in DIR on ADDRESS (127.0.0.1) and PORT (8000),
 ;; over TLS with -t, with the certificate and key that substrate run's --tls-cert and --tls-key grant. -c HOST adds HOST
-;; and www.HOST to localhost as the names allowed, and www.HOST redirects to HOST. Behind proxies, -p HOPS believes
-;; that many hops of their X-Forwarded headers. It logs requests to stderr and prints its URL once it listens. Ctrl-C
-;; finishes the requests in progress, then exits.
+;; and www.HOST to localhost as the names allowed, and www.HOST redirects to HOST. -p HOPS trusts the X-Forwarded
+;; headers of that many proxies in front of the server. It logs requests to stderr and prints its URL once it listens.
+;; Ctrl-C finishes the requests in progress, then exits.
 (require-unqualified std/http)
 (require-unqualified std/http/server)
 (require-unqualified "server.sub")
