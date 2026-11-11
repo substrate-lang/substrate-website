@@ -84,6 +84,19 @@
     (expect-value b (by-css ".pg-input") (include-text "../examples/hello.sub"))
     (expect-attribute b (by-css ".pg-reset") "disabled" "")))
 
+(test indenting
+  (with-browser (b "website")
+    (rewrite b "(define (main)")
+    (browser-press! b "Enter")
+    (browser-press! b "Tab")
+    (browser-type! b (by-css ".pg-input") "(printf \"in\\n\")")
+    (browser-press! b "Enter")
+    (browser-type! b (by-css ".pg-input") "0)")
+    (expect-value b (by-css ".pg-input") "(define (main)\n  (printf \"in\\n\")\n  0)")
+    (browser-press! b "Control+Enter")
+    (finished b)
+    (output b "in\n")))
+
 (test errors
   (with-browser (b "website")
     (rewrite b "(define (main) (nope))")
