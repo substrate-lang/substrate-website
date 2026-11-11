@@ -44,12 +44,6 @@
             pkgs.nodejs        # V8: substrate's host, and the browser tests' driver
             (chromium pkgs)    # the headless browser of the browser tests (above)
           ];
-          # build/substrate: substrate's source, from which the site packs the compiler's (package.sub)
-          shellHook = ''
-            root="$PWD"
-            while [ "$root" != / ] && [ ! -e "$root/flake.nix" ]; do root="$(dirname "$root")"; done
-            mkdir -p "$root/build" && ln -sfn ${substrate pkgs}/lib/substrate "$root/build/substrate"
-          '';
         };
       });
     };

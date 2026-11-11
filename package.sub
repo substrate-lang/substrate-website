@@ -6,8 +6,9 @@
                        (hash "sha256:3509d8b7c67efdc6e703b9dffb288bc833625595f9cb6181e1191d17da24a1d8")))
   (tests (browser))
   (sites (website "site.sub" (html "index.html")
-                  (files "/src" (from "build/substrate") "substrate/compiler/*.sub" "substrate/host/**/*.sub"
-                         "std/encoding/json.sub" "std/encoding/utf8.sub" "std/meta/derive.sub" "std/meta/type-info.sub")
-                  (files "/src/bend2"
-                         (from "build/packages/3509d8b7c67efdc6e703b9dffb288bc833625595f9cb6181e1191d17da24a1d8") "*.sub")
+                  (files "/src/substrate/compiler" (from compiler) "*.sub")
+                  (files "/src/substrate/host" (from host) "**/*.sub")
+                  (files "/src/std" (from std) "encoding/json.sub" "encoding/utf8.sub" "meta/derive.sub"
+                         "meta/type-info.sub")
+                  (files "/src/bend2" (from bend2) "*.sub")
                   (files "/src" "session.map"))))
