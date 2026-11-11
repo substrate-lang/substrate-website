@@ -1,7 +1,8 @@
 (package website
   (version "0.1.0")
   (substrate "0.10.2")
-  (dependencies (web-ui (path "../web-ui"))
+  (dependencies (web-ui (url "https://github.com/substrate-lang/web-ui/archive/refs/tags/v0.10.2.tar.gz")
+                        (hash "sha256:2c19ba734b6e1542cd0a7e69d0072bda704bd15343b583608aba6a4d82adf017"))
                 (bend2 (url "https://github.com/substrate-lang/substrate-bend2/archive/refs/tags/v0.10.0.tar.gz")
                        (hash "sha256:3509d8b7c67efdc6e703b9dffb288bc833625595f9cb6181e1191d17da24a1d8")))
   (tests (browser))
