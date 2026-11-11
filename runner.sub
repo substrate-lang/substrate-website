@@ -1,15 +1,20 @@
 ;; The playground's compiler half, which runs on workers: runner-main evaluates programs in a session and calls their
-;; main. Each program comes as a message, and the answer is a byte, 1 for a failure, the compile and run times in ms as
-;; two f64s, and the error.
+;; main. Each program comes as a message, and its answer goes back as a wire message.
 (require-unqualified compiler/macros)
 (require-unqualified compiler/expander)
 (require-unqualified compiler/roots)
 (require-unqualified host/worker)
 (require-unqualified host/events)
 (require-unqualified host/modules/clock)
+(require-unqualified std/encoding/wire)
 (runtime-require compiler/substrate compiler/macros std/encoding/json bend2)
 
-(provide runner-main)
+(provide runner-main answer ran failed answer.wire-read)
+
+;; How a program went: the times its compiling and running took, in ms, or the error.
+(variant answer [ran [compile-ms f64] [run-ms f64]] [failed [error string]])
+
+(wire answer)
 
 (define program buffer)
 (define running bool #f)
@@ -47,19 +52,15 @@
     (set! started (clock-monotonic))
     (when (and ok (defines-main? text)) (set! ok (session-eval-text! '"(main)" '"main.sub")))
     (set! running #f)
-    (answer! (not ok) (if ok 0 (session-error)))))
+    (answer! (if ok (ran compile-ms (- (clock-monotonic) started)) (failed (datum->string (session-error)))))))
 
-(define (answer! [failed bool] [error datum])
-  (let ([b (make-buffer)] [times (array f64 2)])
-    (buffer-add-byte! (& b) failed)
-    (set! (@ times 0) compile-ms)
-    (set! (@ times 1) (- (clock-monotonic) started))
-    (buffer-add! (& b) (slice (cast (ptr u8) times) 16))
-    (when (!= error 0) (buffer-add-string! (& b) (datum->string error)))
+(define (answer! [a answer])
+  (let ([b (make-buffer)])
+    (answer.wire-write! (& b) (& a))
     (worker-send 0 (buffer-bytes (& b)))
     (buffer-free! (& b))))
 
 (define (trapped [why string])
   (when running
     (set! running #f)
-    (answer! #t (trap-report why))))
+    (answer! (failed (datum->string (trap-report why))))))

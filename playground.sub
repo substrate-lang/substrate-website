@@ -6,6 +6,7 @@
 (require-unqualified host/modules/clock)
 (require-unqualified host/modules/timer)
 (require-unqualified host/web/location)
+(require-unqualified std/encoding/wire)
 (require-unqualified "code.sub")
 (require-unqualified "runner.sub")
 (require-unqualified "examples/compiler.sub")
@@ -168,14 +169,18 @@
       (finish! m))))
 
 (define (answered! [m (ptr model)])
-  (let* ([b (make-buffer)] [n (events-take! (& b))] [times (cast (ptr f64) (+ (-> b bytes) 1))])
-    (cond [(< n 17) (set-status! m tone-bad "Failed")]
-          [(!= (@ (-> b bytes) 0) 0)
-           (set-error! m (cast string (slice (buffer-bytes (& b)) 17)))
-           (set-status! m tone-bad "Failed")]
-          [else
-           (let ([compiled (ms (@ times 0))] [ran (ms (@ times 1))])
-             (printed-status! m (lambda () (printf "Compiled in ~a ms, ran in ~a ms" compiled ran))))])
+  (let ([b (make-buffer)] [a (make-arena)] [got answer] [why wire-error])
+    (events-take! (& b))
+    (if (not (answer.wire-read (& a) (buffer-bytes (& b)) (& got) (& why)))
+        (set-status! m tone-bad "Failed")
+        (match got
+          [(ran compile-ms run-ms)
+           (let ([compiled (ms compile-ms)] [took (ms run-ms)])
+             (printed-status! m (lambda () (printf "Compiled in ~a ms, ran in ~a ms" compiled took))))]
+          [(failed error)
+           (set-error! m error)
+           (set-status! m tone-bad "Failed")]))
+    (arena-free (& a))
     (buffer-free! (& b))
     (finish! m)))
 
