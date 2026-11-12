@@ -71,6 +71,15 @@
     (expect-count b (by-text-containing " modules, ") 1)
     (expect-count b (by-text-containing "Done in") 1)))
 
+(test compiler-twice
+  (with-browser (b "website")
+    (browser-click! b (by-text "Compile the compiler!"))
+    (expect (< (-> (browser-box b (by-css ".playground")) y) 120.0))
+    (browser-hover! b (by-css "h1"))
+    (expect (> (-> (browser-box b (by-css ".playground")) y) 800.0))
+    (browser-click! b (by-text "Compile the compiler!"))
+    (expect (< (-> (browser-box b (by-css ".playground")) y) 120.0))))
+
 (test editing
   (with-browser (b "website")
     (expect-attribute b (by-css ".pg-reset") "disabled" "")

@@ -15,14 +15,18 @@
 
 ;; ---- examples ----
 
-(struct example [index u32] [slug string] [label string] [source string] [built-in bool])
+(struct example [index u32] [slug string] [anchor string] [label string] [source string] [built-in bool])
 
 (const example-count u32 7)
 
 (define examples (array example 7))
 
 (define (example! [i u32] [slug string] [label string] [source string] [built-in bool])
-  (set! (@ examples i) (example #:index i #:slug slug #:label label #:source source #:built-in built-in)))
+  (let ([anchor (make-buffer)])
+    (buffer-add-string! (& anchor) "playground/")
+    (buffer-add-string! (& anchor) slug)
+    (set! (@ examples i) (example #:index i #:slug slug #:anchor (buffer-string (& anchor)) #:label label
+                                  #:source source #:built-in built-in))))
 
 (define (examples-init!)
   (example! 0 "hello" "Hello" (include-text "examples/hello.sub") #f)
@@ -365,7 +369,8 @@
   #:init init
   #:free release
   #:trapped trapped
-  (div ([class "playground"] [node (-> m panel)] [on-window hashchange hash-changed]
+  (div ([class "playground"] [id (-> (@ examples (-> m example)) anchor)] [node (-> m panel)]
+        [on-window hashchange hash-changed]
         [on visibility (seen (event visible))])
     (div ([class "pg-bar"])
       (div ([class "pg-tabs"] [role "group"] [aria-label "Examples"])
