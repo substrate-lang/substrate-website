@@ -5,6 +5,7 @@
 (require-unqualified std/http/server)
 (require-unqualified std/http/static)
 (require-unqualified std/http/checks)
+(require-unqualified std/string)
 
 (provide website website-init! website-handle website-policy)
 
@@ -15,9 +16,7 @@
   [checks (array http-check 2)] [canonical string])
 
 (define (host-name [r (ptr http-request)]) -> string
-  (let ([h (http-request-header r "host")] [end u32 0])
-    (while (and (< end (-> h length)) (!= (@ h end) #\:)) (+= end 1))
-    (slice h 0 end)))
+  (let ([h (http-request-header r "host")]) (slice h 0 (string-index h #\:))))
 
 (define (www? [w (ptr website)] [r (ptr http-request)]) -> bool
   (let ([name (host-name r)] [canonical (-> w canonical)])
