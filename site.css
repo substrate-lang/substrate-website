@@ -130,13 +130,12 @@ a.more:hover { text-decoration: underline; }
 .links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .card.game { grid-row: span 3; }
 .card.game .snake { width: 100%; margin: 0 0 22px; padding: 16px 18px; border: 1px solid var(--line);
-                    border-radius: 8px; background: var(--sunken); color: var(--ink); font: 13px/1.5 var(--mono); }
-.card.game .snake .scores, .card.game .snake .status { color: var(--muted); }
-.card.game .snake .scores span { color: var(--ink); }
-.card.game .snake canvas { outline-color: var(--line-strong); }
-.card.game .snake canvas:focus { outline-color: var(--green); }
-.card.game .snake button { border-color: var(--line-strong); border-radius: 6px; color: var(--ink); }
-.card.game .snake button:hover { border-color: var(--green); color: var(--green); }
+                    border-radius: 8px; background: var(--sunken); font: 13px/1.5 var(--mono); }
+.card.game .snake button { border-radius: 6px; }
+.card.game h3 { margin-top: auto; }
+.card-art.repl { color: var(--muted); }
+.card-art .prompt { color: var(--green); }
+.card-art .input { color: var(--ink); }
 
 /* playground */
 .playground { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
@@ -220,14 +219,11 @@ a.more:hover { text-decoration: underline; }
 @media (max-width: 720px) {
   .wrap { padding: 0 16px; }
   .top nav { gap: 18px; }
-  .top nav a:first-child { display: none; }
+  .top nav .wide { display: none; }
   .section { padding: 64px 0; }
   .features, .cards { grid-template-columns: minmax(0, 1fr); }
   .cards { grid-template-rows: none; }
   .card.game { grid-row: auto; }
   .feature { padding: 26px 20px 28px; }
   .pg-hint { display: none; }
-}
-@media (max-width: 420px) {
-  .top nav a:nth-child(2) { display: none; }
 }
