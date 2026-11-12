@@ -10,6 +10,7 @@
 (require-unqualified "code.sub")
 (require-unqualified "runner.sub")
 (require-unqualified "examples/compiler.sub")
+(require-unqualified std/string)
 
 (provide playground)
 
@@ -37,19 +38,12 @@
   (example! 5 "bend2" "Bend 2" (include-text "examples/bend2.sub") #f)
   (example! 6 "compiler" "Compile the compiler" (include-text "examples/compiler.sub") #t))
 
-(define (starts? [s string] [prefix string]) -> bool
-  (and (>= (-> s length) (-> prefix length)) (== (slice s 0 (-> prefix length)) prefix)))
-
 ;; The example that the URL's #playground/name names, or example-count.
 (define (example-in-url) -> u32
-  (let ([url (location-href)] [found example-count])
-    (for ([i u32 0]) (< i (-> url length)) (+= i 1)
-      (when (== (@ url i) #\#)
-        (let ([hash (slice url i)])
-          (when (starts? hash "#playground/")
-            (for ([k u32 0]) (< k example-count) (+= k 1)
-              (when (== (slice hash 12) (-> (@ examples k) slug)) (set! found k)))))
-        (break)))
+  (let* ([url (location-href)] [hash (slice url (string-index url #\#))] [found example-count])
+    (when (string-prefix? hash "#playground/")
+      (for ([k u32 0]) (< k example-count) (+= k 1)
+        (when (== (slice hash 12) (-> (@ examples k) slug)) (set! found k))))
     (free (-> url bytes))
     found))
 
@@ -267,10 +261,10 @@
 
 (define (line-break [code string] [at u32]) -> string
   (let ([start at] [b (make-buffer)])
-    (while (and (> start 0) (!= (@ code (- start 1)) 10)) (-= start 1))
-    (buffer-add-byte! (& b) 10)
-    (while (and (< start at) (== (@ code start) 32))
-      (buffer-add-byte! (& b) 32)
+    (while (and (> start 0) (!= (@ code (- start 1)) #\newline)) (-= start 1))
+    (buffer-add-byte! (& b) #\newline)
+    (while (and (< start at) (== (@ code start) #\space))
+      (buffer-add-byte! (& b) #\space)
       (+= start 1))
     (buffer-string (& b))))
 

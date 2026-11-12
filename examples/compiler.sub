@@ -4,14 +4,13 @@
 (require-unqualified compiler/roots)
 (require-unqualified compiler/prune)
 (require-unqualified host/modules/clock)
+(require-unqualified std/string)
 
 (provide compile-compiler!)
 
 (define (kib [bytes u32]) -> f64 (/ (nearbyint (/ (* (cast f64 bytes) 10.0) 1024.0)) 10.0))
 
-(define (stem [name string]) -> string
-  (for ([i u32 0]) (< i (-> name length)) (+= i 1) (when (== (@ name i) #\.) (return (slice name 0 i))))
-  name)
+(define (stem [name string]) -> string (slice name 0 (string-index name #\.)))
 
 (define (compile-compiler!)
   (let ([start (clock-monotonic)] [total u32 0] [count u32 0])
