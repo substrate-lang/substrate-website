@@ -1,6 +1,7 @@
 ;; Substrate's syntax in color: code-tokenize! splits source into tokens, and code-view shows them as spans whose
 ;; classes site.css colors.
 (require-unqualified web-ui)
+(require-unqualified std/string)
 
 (provide code-tokens code-token code-tokenize! code-tokens-free! code-view token-plain token-comment token-text
          token-number token-keyword token-type token-option token-punctuation)
@@ -32,24 +33,22 @@
   (for ([i u32 0]) (< i (-> words length)) (+= i 1) (when (== (@ words i) w) (return #t)))
   #f)
 
-(define (digit? [c u8]) -> bool (and (>= c 48) (<= c 57)))
-
 (define (number-word? [w string]) -> bool
   (let ([n (-> w length)])
-    (or (and (> n 0) (digit? (@ w 0)))
-        (and (> n 1) (or (== (@ w 0) 45) (== (@ w 0) 43) (== (@ w 0) 46)) (digit? (@ w 1))))))
+    (or (and (> n 0) (char-numeric? (@ w 0)))
+        (and (> n 1) (or (== (@ w 0) #\-) (== (@ w 0) #\+) (== (@ w 0) #\.)) (char-numeric? (@ w 1))))))
 
 (define (word-kind [w string]) -> u32
-  (cond [(and (>= (-> w length) 2) (== (@ w 0) 35) (== (@ w 1) 58)) token-option]
+  (cond [(and (>= (-> w length) 2) (== (@ w 0) #\#) (== (@ w 1) #\:)) token-option]
         [(or (== w "#t") (== w "#f") (number-word? w)) token-number]
         [(listed? (slice keywords) w) token-keyword]
         [(listed? (slice types) w) token-type]
         [else token-plain]))
 
 (define (delimiter? [c u8]) -> bool
-  (or (<= c 32) (== c 40) (== c 41) (== c 91) (== c 93) (== c 34) (== c 59)))
+  (or (<= c #\space) (== c #\() (== c #\)) (== c #\[) (== c #\]) (== c #\") (== c #\;)))
 
-(define (quote-mark? [c u8]) -> bool (or (== c 39) (== c 96) (== c 44)))
+(define (quote-mark? [c u8]) -> bool (or (== c #\') (== c #\`) (== c #\,)))
 
 (define (push![c (ptr code-tokens)] [start u32] [end u32] [kind u32])
   (when (== start end) (return))
@@ -73,29 +72,29 @@
   (let ([n (-> s length)] [i u32 0])
     (while (< i n)
       (let ([ch (@ s i)] [start i])
-        (cond [(== ch 59)
-               (while (and (< i n) (!= (@ s i) 10)) (+= i 1))
+        (cond [(== ch #\;)
+               (while (and (< i n) (!= (@ s i) #\newline)) (+= i 1))
                (push! c start i token-comment)]
-              [(== ch 34)
+              [(== ch #\")
                (+= i 1)
-               (while (and (< i n) (!= (@ s i) 34))
-                 (when (and (== (@ s i) 92) (< (+ i 1) n)) (+= i 1))
+               (while (and (< i n) (!= (@ s i) #\"))
+                 (when (and (== (@ s i) #\\) (< (+ i 1) n)) (+= i 1))
                  (+= i 1))
                (when (< i n) (+= i 1))
                (push! c start i token-text)]
-              [(<= ch 32)
-               (while (and (< i n) (<= (@ s i) 32)) (+= i 1))
+              [(<= ch #\space)
+               (while (and (< i n) (<= (@ s i) #\space)) (+= i 1))
                (push! c start i token-plain)]
-              [(or (== ch 40) (== ch 41) (== ch 91) (== ch 93))
+              [(or (== ch #\() (== ch #\)) (== ch #\[) (== ch #\]))
                (+= i 1)
                (push! c start i token-punctuation)]
-              [(and (== ch 35) (< (+ i 2) n) (== (@ s (+ i 1)) 92))
+              [(and (== ch #\#) (< (+ i 2) n) (== (@ s (+ i 1)) #\\))
                (+= i 3)
                (while (and (< i n) (not (delimiter? (@ s i)))) (+= i 1))
                (push! c start i token-number)]
-              [(or (quote-mark? ch) (and (== ch 35) (< (+ i 1) n) (quote-mark? (@ s (+ i 1)))))
-               (+= i (if (== ch 35) 2 1))
-               (when (and (< i n) (== (@ s i) 64)) (+= i 1))
+              [(or (quote-mark? ch) (and (== ch #\#) (< (+ i 1) n) (quote-mark? (@ s (+ i 1)))))
+               (+= i (if (== ch #\#) 2 1))
+               (when (and (< i n) (== (@ s i) #\@)) (+= i 1))
                (push! c start i token-punctuation)]
               [else
                (while (and (< i n) (not (delimiter? (@ s i)))) (+= i 1))

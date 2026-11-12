@@ -21,7 +21,7 @@
   (let ([line (make-buffer)])
     (buffer-add-string! (& line) (if (-> s secure) "https://" "http://"))
     (buffer-add-string! (& line) (if (or (== (-> s host) "") (== (-> s host) "0.0.0.0")) "127.0.0.1" (-> s host)))
-    (buffer-add-byte! (& line) 58)
+    (buffer-add-byte! (& line) #\:)
     (http-add-decimal! (& line) (cast i64 (-> s port)))
     (buffer-add-string! (& line) "/\n")
     (host-write 1 (buffer-bytes (& line)))
@@ -30,7 +30,7 @@
 (define (main)
   (let* ([args (host-args)] [n (-> args length)] [at u32 0] [address "127.0.0.1"] [secure #f] [canonical ""]
          [port i64 8000] [hops i64 0] [ok #t] [count u32 1])
-    (while (and ok (< at n) (> (-> (@ args at) length) 0) (== (@ (@ args at) 0) 45))
+    (while (and ok (< at n) (> (-> (@ args at) length) 0) (== (@ (@ args at) 0) #\-))
       (let ([flag (@ args at)])
         (cond [(and (== flag "-l") (< (+ at 1) n)) (set! address (@ args (+ at 1))) (+= at 2)]
               [(== flag "-t") (set! secure #t) (+= at 1)]

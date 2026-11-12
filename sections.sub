@@ -4,14 +4,11 @@
 (require-unqualified "counter.sub")
 (require-unqualified "playground.sub")
 (require-unqualified snake/snake)
+(require-unqualified std/string)
 
 (provide site-header hero core-idea examples playground-section install faq site-footer)
 
-(define (without-provide [s string]) -> string
-  (let ([mark "\n(provide counter)"])
-    (for ([i u32 0]) (<= (+ i (-> mark length)) (-> s length)) (+= i 1)
-      (when (== (slice s i (+ i (-> mark length))) mark) (return (slice s 0 i))))
-    s))
+(define (without-provide [s string]) -> string (slice s 0 (string-find s "\n(provide counter)")))
 
 (define (snippet-init [c (ptr code-tokens)] [source string]) (code-tokenize! c source))
 
@@ -21,14 +18,10 @@
   #:free code-tokens-free!
   (pre ([class "code"]) (code-view c source)))
 
-(define (line-end [s string]) -> u32
-  (for ([i u32 0]) (< i (-> s length)) (+= i 1) (when (== (@ s i) 10) (return i)))
-  (-> s length))
-
 (view (console [s string])
   (pre ([class "code console"])
-    (span ([class "command"]) (text (slice s 0 (line-end s))))
-    (text (slice s (line-end s)))))
+    (span ([class "command"]) (text (slice s 0 (string-index s #\newline))))
+    (text (slice s (string-index s #\newline)))))
 
 (view (code-panel [name string] [source string])
   (div ([class "panel"])
