@@ -1,0 +1,56 @@
+<!doctype html>
+<!-- The site's social card, which social/render.sh renders to assets/og.png. Its lede is the hero's in sections.sub,
+     cut to two lines. The fonts in fonts/ are under the SIL Open Font License. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Substrate social card</title>
+<style>
+  @font-face { font-family: Inter; font-weight: 400; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: Inter; font-weight: 700; src: url("fonts/inter-latin-700-normal.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-weight: 500;
+               src: url("fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-weight: 700;
+               src: url("fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
+  html, body { margin: 0; background: #0a0d0b; }
+  .card { position: relative; width: 1200px; height: 630px; box-sizing: border-box; padding: 80px 88px; overflow: hidden;
+          display: flex; flex-direction: column; justify-content: space-between;
+          background: #0a0d0b; color: #dce6de; font-family: Inter, sans-serif; }
+  /* The hero's grid and glow, as on the site. */
+  .card::before { content: ""; position: absolute; inset: 0; opacity: 0.55;
+                  background-image: linear-gradient(#1b241e 1px, transparent 1px),
+                                    linear-gradient(90deg, #1b241e 1px, transparent 1px);
+                  background-size: 48px 48px;
+                  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 30% 20%, #000 10%, transparent 75%); }
+  .card::after { content: ""; position: absolute; left: -10%; top: -30%; width: 70%; height: 90%;
+                 background: radial-gradient(closest-side, rgba(74, 222, 128, 0.09), transparent); }
+  .card > * { position: relative; z-index: 1; }
+  .logo { display: flex; align-items: center; gap: 18px; color: #4ade80;
+          font: 700 34px/1 "JetBrains Mono", monospace; letter-spacing: -0.01em; }
+  .logo svg { width: 64px; height: 64px; }
+  .copy { display: flex; flex-direction: column; gap: 22px; }
+  h1 { margin: 0; font-size: 76px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 700; }
+  h1 em { font-style: normal; color: #4ade80; }
+  .lede { margin: 0; max-width: 900px; font-size: 26px; line-height: 1.45; color: #95a49a; }
+  .url { margin: 0; color: #66756b; font: 500 20px/1 "JetBrains Mono", monospace; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <svg viewBox="2 2 28 28" aria-hidden="true">
+      <path d="M9.5 6.5Q4.5 16 9.5 25.5M22.5 6.5Q27.5 16 22.5 25.5" fill="none" stroke="#4ade80" stroke-width="2.6"
+            stroke-linecap="round"/>
+      <rect x="12.5" y="9.5" width="7" height="13" rx="1" fill="#4ade80"/>
+    </svg>
+    substrate
+  </div>
+  <div class="copy">
+    <h1>A Lisp for <em>WebAssembly</em></h1>
+    <p class="lede">Substrate combines the low-level power of C with Racket-style hygienic macros. Its compiler is
+      self-hosted, fast, and runs in the browser.</p>
+  </div>
+  <p class="url">substrate-lang.com</p>
+</div>
+</body>
+</html>
