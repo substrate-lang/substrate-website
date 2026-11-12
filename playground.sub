@@ -38,7 +38,7 @@
 
 ;; The example that the URL's #playground/name names, or example-count.
 (define (example-in-url) -> u32
-  (let ([url (location-get)] [found example-count])
+  (let ([url (location-href)] [found example-count])
     (for ([i u32 0]) (< i (-> url length)) (+= i 1)
       (when (== (@ url i) #\#)
         (let ([hash (slice url i)])
