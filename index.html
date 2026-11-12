@@ -5,21 +5,35 @@
 <title>Substrate: A Lisp for WebAssembly</title>
 <meta name="description" content="Substrate is a Lisp for writing WebAssembly. It combines the low-level power of C with Racket-style hygienic macros for defining new languages and DSLs. Its compiler is self-hosted, fast, and runs in the browser.">
 <meta name="theme-color" content="#0a0d0b">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0d0b'/%3E%3Crect x='11' y='7' width='10' height='18' rx='1.5' fill='%234ade80'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://substrate-lang.com/">
+<meta property="og:title" content="Substrate: A Lisp for WebAssembly">
+<meta property="og:description" content="Substrate combines the low-level power of C with Racket-style hygienic macros. Its compiler is self-hosted, fast, and runs in the browser.">
+<meta property="og:image" content="https://substrate-lang.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Substrate: A Lisp for WebAssembly">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0d0b'/%3E%3Cpath d='M9.5 6.5Q4.5 16 9.5 25.5M22.5 6.5Q27.5 16 22.5 25.5' fill='none' stroke='%234ade80' stroke-width='2.6' stroke-linecap='round'/%3E%3Crect x='12.5' y='9.5' width='7' height='13' rx='1' fill='%234ade80'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/jetbrains-mono-bold-wordmark.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* The wordmark's font: JetBrains Mono Bold, cut down to the letters of "substrate" (OFL, see assets/fonts/OFL.txt).
+     It has its own family name so it never stands in for a JetBrains Mono the visitor has installed. */
+  @font-face { font-family: "Substrate Wordmark"; font-weight: 700; font-display: block;
+               src: url("assets/fonts/jetbrains-mono-bold-wordmark.woff2") format("woff2"); }
   :root { color-scheme: dark; }
   html, body { margin: 0; background: #0a0d0b; color: #dce6de; }
-  #loading { position: fixed; inset: 0; display: grid; place-items: center;
-             font: 700 18px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #4ade80; }
-  #loading span { display: inline-block; width: 0.55em; height: 1.05em; margin-left: 3px; vertical-align: -0.15em;
-                  background: #4ade80; animation: blink 1.1s steps(1) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+             font: 700 18px/1 "Substrate Wordmark", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+             color: #4ade80; }
+  #loading svg { width: 1.875em; height: 1.875em; margin-right: 0.5em; }
   #root:not(:empty) + #loading { display: none; }
   noscript p { max-width: 36em; margin: 30vh auto 0; padding: 0 24px; font: 16px/1.6 system-ui, sans-serif; }
   noscript a { color: #4ade80; }
 </style>
 <div id="root"></div>
-<div id="loading">substrate<span></span></div>
+<div id="loading"><svg viewBox="2 2 28 28" aria-hidden="true"><path d="M9.5 6.5Q4.5 16 9.5 25.5M22.5 6.5Q27.5 16 22.5 25.5" fill="none" stroke="#4ade80" stroke-width="2.6" stroke-linecap="round"/><rect x="12.5" y="9.5" width="7" height="13" rx="1" fill="#4ade80"/></svg>substrate</div>
 <noscript><style>#loading { display: none; }</style><p>This page is written in Substrate, and needs JavaScript and WebAssembly. Substrate itself is on <a href="https://github.com/substrate-lang/substrate">GitHub</a>.</p></noscript>
 <script type="module" src="host/web/start.mjs"></script>
 </html>

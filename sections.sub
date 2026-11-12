@@ -38,7 +38,9 @@
     (snippet ([source source]))))
 
 (view (wordmark)
-  (a ([class "wordmark"] [href "#top"]) "substrate" (span ([class "cursor"] [aria-hidden "true"]))))
+  (a ([class "wordmark"] [href "#top"])
+    (span ([class "mark"] [aria-hidden "true"]) (span ([class "mark-cursor"])))
+    "substrate"))
 
 (view (site-header)
   (header ([class "top"])
