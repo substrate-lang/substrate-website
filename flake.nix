@@ -23,10 +23,10 @@
       # substrate's npm release, with no toolchains from substrate upgrade in place of it
       substrate = pkgs: pkgs.stdenvNoCC.mkDerivation {
         pname = "substrate";
-        version = "0.11.1";
+        version = "0.11.2";
         src = pkgs.fetchurl {
-          url = "https://registry.npmjs.org/substrate-lang/-/substrate-lang-0.11.1.tgz";
-          hash = "sha512-UAvBJfk5/Hpt2Hxsnvr3s//k2R8EEyNEaU+UQpdgy+QmXMZprBf1d3apPR3AlSeMEAPpIjO1GdoypgziwyRAbQ==";
+          url = "https://registry.npmjs.org/substrate-lang/-/substrate-lang-0.11.2.tgz";
+          hash = "sha512-+yAsX0KEPsW1bbyPbpH6QMghQNiKrHd1GEI7U/m/EgdNw58m8CMU8APquycgcJbC4UdMHykBH/VjMohWWp642A==";
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         installPhase = ''

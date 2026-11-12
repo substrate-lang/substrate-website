@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQLite explorer</title>
+<meta name="theme-color" content="#0a0d0b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0d0b'/%3E%3Cpath d='M9.5 6.5Q4.5 16 9.5 25.5M22.5 6.5Q27.5 16 22.5 25.5' fill='none' stroke='%234ade80' stroke-width='2.6' stroke-linecap='round'/%3E%3Crect x='12.5' y='9.5' width='7' height='13' rx='1' fill='%234ade80'/%3E%3C/svg%3E">
+<link rel="preload" href="/assets/fonts/jetbrains-mono-bold-wordmark.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: "Substrate Wordmark"; font-weight: 700; font-display: block;
+               src: url("/assets/fonts/jetbrains-mono-bold-wordmark.woff2") format("woff2"); }
+  :root { color-scheme: dark; }
+  html, body { margin: 0; background: #0a0d0b; color: #dce6de; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+             font: 700 18px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #4ade80; }
+  #loading svg { width: 1.875em; height: 1.875em; margin-right: 0.5em; }
+  #root:not(:empty) + #loading { display: none; }
+  noscript p { max-width: 36em; margin: 30vh auto 0; padding: 0 24px; font: 16px/1.6 system-ui, sans-serif; }
+  noscript a { color: #4ade80; }
+</style>
+<div id="root"></div>
+<div id="loading"><svg viewBox="2 2 28 28" aria-hidden="true"><path d="M9.5 6.5Q4.5 16 9.5 25.5M22.5 6.5Q27.5 16 22.5 25.5" fill="none" stroke="#4ade80" stroke-width="2.6" stroke-linecap="round"/><rect x="12.5" y="9.5" width="7" height="13" rx="1" fill="#4ade80"/></svg>SQLite explorer</div>
+<noscript><style>#loading { display: none; }</style><p>This page is written in Substrate, and needs JavaScript and WebAssembly. Substrate itself is on <a href="https://github.com/substrate-lang/substrate">GitHub</a>.</p></noscript>
+<script type="module" src="host/web/start.mjs"></script>
+</html>

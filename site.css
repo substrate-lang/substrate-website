@@ -117,7 +117,7 @@ a { color: inherit; }
 .console { color: var(--muted); }
 .console .command { color: var(--ink); }
 
-.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto 1fr;
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto 1fr;
          gap: 20px; }
 .card { display: flex; flex-direction: column; padding: 24px; border: 1px solid var(--line); border-radius: 12px;
         background: var(--raised); }
@@ -129,13 +129,15 @@ a { color: inherit; }
 .more { color: var(--green); font: 12px/1 var(--mono); text-decoration: none; }
 a.more:hover { text-decoration: underline; }
 .links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
-.card.game { grid-row: span 3; }
+.card.game { grid-row: span 4; }
 .card.game .snake { width: 100%; margin: 0 0 22px; padding: 16px 18px; border: 1px solid var(--line);
                     border-radius: 8px; background: var(--sunken); font: 13px/1.5 var(--mono); }
 .card.game .snake button { border-radius: 6px; }
 .card.game h3 { margin-top: auto; }
-.card-art.repl { color: var(--muted); }
-.card-art .prompt { color: var(--green); }
+.card-art.explorer { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.card-art.explorer pre { margin: 0; font: inherit; }
+.card-art.explorer svg { align-self: flex-end; flex: none; width: 96px; height: 48px; }
+.card-art.explorer rect { fill: var(--green); }
 .card-art .input { color: var(--ink); }
 
 /* playground */

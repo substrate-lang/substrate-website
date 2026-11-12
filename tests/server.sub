@@ -1,6 +1,7 @@
 (require-unqualified std/http/test)
 (require-unqualified std/http/server)
 (require-unqualified "../server.sub")
+(require-unqualified std/string)
 
 (define w website)
 (define names (array string 3) (array-of string ".localhost" "substrate-lang.com" "www.substrate-lang.com"))
@@ -24,6 +25,13 @@
   (expect-equal (http-test-header (& t) "cache-control") "public, max-age=31536000, immutable")
   (expect-equal (got "/index.html" "substrate-lang.com") 200)
   (expect-equal (http-test-header (& t) "cache-control") "no-cache"))
+
+(test server-explorer
+  (expect-equal (got "/sqlite-explorer/query/?q=(from%20orders)" "substrate-lang.com") 200)
+  (expect (string-contains? (cast string (http-test-body (& t))) "<title>explorer</title>"))
+  (expect-equal (got "/sqlite-explorer/database/orders/" "substrate-lang.com") 200)
+  (expect-equal (got "/sqlite-explorer/nope/" "substrate-lang.com") 404)
+  (expect-equal (got "/sqlite-explorer" "substrate-lang.com") 301))
 
 (test server-zipped
   (website-init! (& w) "tests/site" (slice names) "substrate-lang.com")
