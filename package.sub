@@ -1,7 +1,8 @@
 (package website
   (version "0.1.0")
   (substrate "0.11.0")
-  (dependencies (web-ui (url "https://github.com/substrate-lang/web-ui/archive/refs/tags/v0.11.0.tar.gz")
+  (dependencies (snake (path "../snake-game"))
+                (web-ui (url "https://github.com/substrate-lang/web-ui/archive/refs/tags/v0.11.0.tar.gz")
                         (hash "sha256:18eb5f01852d5e6664137cdd6dee898be733d2da3b55df177101cf4eb669ca88"))
                 (bend2 (url "https://github.com/substrate-lang/substrate-bend2/archive/refs/tags/v0.11.0.tar.gz")
                        (hash "sha256:15d07c4ff74c44ed3aacafd5535cda6bd6a71b1579f49be7a9909e14e99d51e1")))

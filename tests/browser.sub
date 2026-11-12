@@ -48,6 +48,15 @@
     (expect-count b (by-css ".feature .code") 4)
     (expect-count b (by-css "#faq details") 4)))
 
+(test snake
+  (with-browser (b "website")
+    (browser-advance! b 100)
+    (expect-text b (by-css ".status") "Click the board to play.")
+    (browser-click! b (by-css ".board"))
+    (expect-text b (by-css ".status") "Press an arrow key to start.")
+    (browser-press! b "ArrowRight")
+    (expect-text b (by-css ".status") "Arrow keys or W A S D to turn. Space to pause.")))
+
 (test examples
   (with-browser (b "website")
     (browser-click! b (by-role "button" "Hello"))
