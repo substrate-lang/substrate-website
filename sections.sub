@@ -147,12 +147,13 @@
   (section ([id "install"] [class "section install"])
     (div ([class "wrap"])
       (h2 "Install")
-      (p ([class "sub"])
-        "The Substrate host runs Wasm on Node's V8 engine, so you can install Substrate with npm. You can also "
-        "build it from source on " (a ([href "https://github.com/substrate-lang/substrate"]) "GitHub") ".")
-      (pre ([class "code console"])
-        (span ([class "c"]) "# requires Node 22.22.3+ or 24.15+") "\n"
-        (span ([class "command"]) "$ npm install -g substrate-lang")))))
+      (div ([class "install-body"])
+        (p ([class "sub"])
+          "Install the " (code "substrate") " command with npm, or build it from source on "
+          (a ([href "https://github.com/substrate-lang/substrate"]) "GitHub") ".")
+        (pre ([class "code console"])
+          (span ([class "c"]) "# requires Node 22.22.3+ or 24.15+") "\n"
+          (span ([class "command"]) "$ npm install -g substrate-lang"))))))
 
 (view (faq)
   (section ([id "faq"] [class "section"])

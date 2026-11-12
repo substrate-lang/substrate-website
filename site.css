@@ -189,8 +189,9 @@ a.more:hover { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .pg-state.busy::before { animation: none; } }
 
 /* install */
-.install .code { max-width: var(--column); box-sizing: border-box; padding: 14px 20px;
-                 border: 1px solid var(--line); border-radius: 8px; background: var(--sunken); }
+.install-body { width: fit-content; max-width: var(--column); }
+.install .code { box-sizing: border-box; padding: 14px 20px; border: 1px solid var(--line); border-radius: 8px;
+                 background: var(--sunken); }
 
 /* questions */
 #faq details { max-width: var(--column); border-bottom: 1px solid var(--line); }
