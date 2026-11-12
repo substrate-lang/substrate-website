@@ -11,6 +11,7 @@
       (core-idea)
       (examples)
       (playground-section)
+      (install)
       (faq))
     (site-footer)))
 

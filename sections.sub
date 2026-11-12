@@ -4,7 +4,7 @@
 (require-unqualified "counter.sub")
 (require-unqualified "playground.sub")
 
-(provide site-header hero core-idea examples playground-section faq site-footer)
+(provide site-header hero core-idea examples playground-section install faq site-footer)
 
 (define (without-provide [s string]) -> string
   (let ([mark "\n(provide counter)"])
@@ -47,6 +47,7 @@
       (nav ([aria-label "Site"])
         (a ([href "#why"]) "The Core Idea")
         (a ([href "#playground"]) "Playground")
+        (a ([href "#install"]) "Install")
         (a ([href "https://github.com/substrate-lang/substrate"]) "GitHub ↗")))))
 
 (view (hero)
@@ -55,8 +56,8 @@
       (div ([class "hero-copy"])
         (h1 "A Lisp for " (span ([class "accent"]) "WebAssembly"))
         (p ([class "lede"])
-          "Substrate has C-like semantics combined with Racket-style hygienic macros for defining new languages and "
-          "DSLs. Its compiler is self-hosted, fast, and runs in the browser.")
+          "Substrate combines the low-level power of C with Racket-style hygienic macros for defining new languages "
+          "and DSLs. Its compiler is self-hosted, fast, and runs in the browser.")
         (div ([class "actions"])
           (a ([class "button primary"] [href "#playground"]) "Try Substrate")
           (a ([class "button"] [href "#playground/compiler"]) "Compile the compiler!")))
@@ -77,14 +78,14 @@
         (article ([class "feature"])
           (p ([class "number"]) "01")
           (h3 "Languages as libraries")
-          (p "Hygienic macros and module hooks allow for new languages and DSLs, defined and imported like any "
-             "library and sandboxed at compile time.")
+          (p "Hygienic macros and module hooks allow you to use Substrate to define new languages and DSLs as "
+             "importable libraries.")
           (snippet ([source (include-text "snippets/languages.txt")])))
         (article ([class "feature"])
           (p ([class "number"]) "02")
           (h3 "Flexible memory model")
-          (p "Substrate has simple C-like memory management, but languages or DSLs can build their own memory-safe "
-             "runtimes.")
+          (p "Substrate has simple C-like memory management. Languages or DSLs can build memory-safe runtimes on "
+             "top of it.")
           (snippet ([source (include-text "snippets/memory.txt")])))
         (article ([class "feature"])
           (p ([class "number"]) "03")
@@ -126,34 +127,48 @@
         "page.")
       (playground))))
 
+(view (install)
+  (section ([id "install"] [class "section install"])
+    (div ([class "wrap"])
+      (h2 "Install")
+      (p ([class "sub"])
+        "The Substrate host runs Wasm on Node's V8 engine, so you can install Substrate with npm. You can also "
+        "build it from source on " (a ([href "https://github.com/substrate-lang/substrate"]) "GitHub") ".")
+      (pre ([class "code console"])
+        (span ([class "c"]) "# requires Node 22.22.3+ or 24.15+") "\n"
+        (span ([class "command"]) "$ npm install -g substrate-lang")))))
+
 (view (faq)
   (section ([id "faq"] [class "section"])
     (div ([class "wrap"])
       (h2 "FAQ")
       (details
         (summary "Why use Substrate over C, Rust, or Zig?")
-        (p "These languages are all great in various ways, and they all compile to Wasm. It probably makes most "
-           "sense to consider Substrate if you want a fast, tiny toolchain (especially if you need the compiler to "
-           "run in the browser) or powerful compile-time metaprogramming for your domain."))
+        (p "These languages are great and they all compile to WebAssembly. Comparatively, Substrate makes the most "
+           "sense if you want a very fast (and small) toolchain or more powerful compile-time metaprogramming for "
+           "your domain. Substrate also provides more extensive tooling for building and testing code intended to "
+           "run in the browser."))
       (details
         (summary "Are LLMs good at using Substrate?")
-        (p "Frontier models are very familiar with C semantics and appear to write performant s-expression-style C "
-           "with very few errors. They also understand Racket-style hygienic macros for building languages. The Bend 2 "
-           "port was built with LLMs with no hand-holding required. It helps that the entire compiler fits into the "
-           "context window of a large model."))
+        (p "Frontier models are very familiar with C semantics and write performant S-expression-style C with few "
+           "errors. They also understand Racket-style hygienic macros for building languages. One "
+           (a ([href "https://github.com/substrate-lang/substrate-bend2"]) "dependently typed language")
+           " was built with LLMs in more or less a single prompt on Opus 5.5, with further iteration only necessary "
+           "to improve compile-time performance and efficiency. It helps that the entire Substrate compiler fits "
+           "into the context window of a large model."))
       (details
         (summary "Is Substrate ready for production?")
-        (p "It depends on your application. The compiler core itself has been extensively tested, and perhaps more "
-           "importantly, dogfooded, via building itself and all of Substrate's infrastructure. Other parts of the "
-           "language and libraries are less battle-tested. Substrate is also pre-1.0, so aspects of the language may "
-           "change, though the compiler core itself is small (<12k lines of code) and should remain fairly stable."))
+        (p "Substrate is still evolving and its APIs may change before 1.0. The compiler core is small (<12k LOC) and "
+           "has been extensively tested and dogfooded, but other parts of the language and libraries are less "
+           "battle-tested."))
       (details
         (summary "Why a language like Substrate now?")
-        (p "The future of programming in the era of LLMs is a question many have been thinking about. We believe "
-           "WebAssembly will play an important role in this future from a portability and security standpoint. "
-           "Substrate is a meta-bet in this area. As a Lisp inspired by Racket, it allows us to quickly develop new "
-           "languages on top of Wasm, whether we want something dependently typed that can help with high level "
-           "verification, or something closer to the metal.")))))
+        (p "How will programming languages and infrastructure evolve in the era of LLMs? People have many opinions, "
+           "but we believe WebAssembly will play an important role due to the security and performance properties it "
+           "provides. Along these lines, one way to see Substrate is as a meta-language that enables rapid "
+           "exploration of what is possible on WebAssembly. Whether the future of programming becomes more oriented "
+           "towards high-level verification, or moves closer to the metal, Substrate is a platform that can empower "
+           "both.")))))
 
 (view (site-footer)
   (footer ([class "foot"])

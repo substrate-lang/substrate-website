@@ -9,5 +9,6 @@
     [Z b]
     [(S p) (S (add p b))]))
 
+;; prove that 0 + b = b for every b
 (law (zero_add [b : N]) (== (add Z b) b N))
-(def (zero_add b) refl) ; 0 + b = b for every b
+(def (zero_add b) refl)
