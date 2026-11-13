@@ -66,7 +66,7 @@
     (expect-count b (by-text-containing "Compiled in") 1)
     (ran b "Variants" "point: 3, 4\nareas: 9, 42\nabove 4: 2, above 8: 1\n")
     (ran b "Macros" "x * 2 + y / 5 = 10\n(x + y) * (y - x) = 84\n")
-    (ran b "JSON" "substrate 0.10.1 has 2 tags\n{\"name\":\"substrate\",\"version\":\"1.0.0\",\"tags\":[\"lisp\",\"wasm\"]}\n")
+    (ran b "JSON" "substrate 0.11.2 has 2 tags\n{\"name\":\"substrate\",\"version\":\"1.0.0\",\"tags\":[\"lisp\",\"wasm\"]}\n")
     (ran b "Memory" "malloc: 7\narena: 1000 999 998\nbuffer: grows as needed\n")
     (ran b "Bend 2" "(S (S (S Z)))\n")))
 
