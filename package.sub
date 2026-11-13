@@ -1,8 +1,8 @@
 (package website
   (version "0.1.0")
   (substrate "0.11.2")
-  (dependencies (snake (url "https://github.com/substrate-lang/snake-game/archive/refs/tags/v0.11.1.tar.gz")
-                       (hash "sha256:9445e36eba37c1124cae73dd14b0f7cef967f0b317796a6c7e55662e308597d0"))
+  (dependencies (snake (url "https://github.com/substrate-lang/snake-game/archive/refs/tags/v0.11.2.tar.gz")
+                       (hash "sha256:83d27048c3b29608a6d0490464c9d7f250e24df4f92de1578a6ea5a515fac048"))
                 (web-ui (url "https://github.com/substrate-lang/web-ui/archive/refs/tags/v0.11.3.tar.gz")
                         (hash "sha256:457e4335eab5da7d2dc1f0061a24309ae5537adde5a592b4cd914d81c820bd1d"))
                 (sqlite-explorer (url "https://github.com/substrate-lang/sqlite-explorer/archive/refs/tags/v0.11.0.tar.gz")

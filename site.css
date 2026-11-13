@@ -18,7 +18,7 @@
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-html { background: var(--ground); scroll-padding-top: 76px; }
+html { background: var(--ground); scroll-padding-top: 76px; -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.6 var(--sans);
        -webkit-font-smoothing: antialiased; }
 ::selection { background: rgba(74, 222, 128, 0.28); }
