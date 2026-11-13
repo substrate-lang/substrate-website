@@ -67,7 +67,6 @@
 
 (test server-rendered
   (website-init! (& w) "tests/site" (slice names) "substrate-lang.com")
-  (website-render! (& w))
   (let ([home (rendered "/")])
     (expect-equal (http-test-header (& t) "content-type") "text/html; charset=utf-8")
     (expect-equal (http-test-header (& t) "cache-control") "no-cache")
@@ -78,3 +77,13 @@
     (expect (string-contains? orders "<title data-ui=\"explorer\">orders · SQLite explorer</title>"))
     (expect (string-contains? orders "href=\"/sqlite-explorer/database/\"")))
   (expect (string-contains? (rendered "/sqlite-explorer/query/?q=(from%20orders)") "<div id=\"root\"></div>")))
+
+(test server-apps
+  (expect-equal (got "/sqlite-explorer/database" "substrate-lang.com") 301)
+  (expect-equal (http-test-header (& t) "location") "/sqlite-explorer/database/")
+  (expect-equal (got "/sqlite-explorer/database/nope/" "substrate-lang.com") 200)
+  (expect (string-contains? (cast string (http-test-body (& t))) "<div id=\"root\"></div>"))
+  (expect-equal (got "/nope/" "substrate-lang.com") 404)
+  (expect-equal (got "/sqlite-explorer/database/orders/" "substrate-lang.com") 200)
+  (let ([first (string-copy (cast string (http-test-body (& t))))])
+    (expect-equal (rendered "/sqlite-explorer/database/orders/") first)))

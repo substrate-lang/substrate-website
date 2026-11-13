@@ -171,7 +171,6 @@
 
 (define (site-server)
   (website-init! (& served) (@ (host-args) 0) (slice local) "")
-  (website-render! (& served))
   (set! (-> served server listening) announced)
   (let ([why error])
     (unless (http-serve! (& (-> served server)) 0 website-handle (& why)) (host-exit 1 (error-text (& why))))))
