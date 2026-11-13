@@ -214,4 +214,5 @@
   (footer ([class "foot"])
     (div ([class "wrap bar"])
       (wordmark)
+      (span ([class "copyright"]) "© 2026 Substrate Team")
       (a ([href "https://github.com/substrate-lang/substrate"]) "Read the source ↗"))))

@@ -224,6 +224,7 @@ a.more:hover { text-decoration: underline; }
 .foot .bar { height: 88px; }
 .foot .bar > a:last-child { color: var(--muted); font: 13px/1 var(--mono); text-decoration: none; }
 .foot .bar > a:last-child:hover { color: var(--green); }
+.foot .copyright { margin-right: auto; color: var(--faint); font: 13px/1 var(--mono); }
 
 @media (max-width: 960px) {
   .hero { padding: 64px 0 72px; }
@@ -244,4 +245,6 @@ a.more:hover { text-decoration: underline; }
   .card.game { grid-row: auto; }
   .feature { padding: 26px 20px 28px; }
   .pg-hint { display: none; }
+  .foot .bar { flex-wrap: wrap; row-gap: 16px; height: auto; padding-top: 28px; padding-bottom: 28px; }
+  .foot .copyright { order: 1; flex-basis: 100%; }
 }
