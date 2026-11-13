@@ -1,18 +1,16 @@
 ;; The site's server: the site's files for the hosts allowed, with security headers and a redirect from www.HOST to
-;; HOST. Files whose paths hold a hash, as substrate build --release writes them, are cached for a year. The site's apps
-;; answer the paths that name no file under where they are mounted (apps). A page that an app renders comes with the
-;; app rendered into it (app-render), and the server keeps the last 64 that it rendered for targets without a query.
-;; serve.sub runs the server.
-(require-unqualified host/fs)
+;; HOST. Files whose paths hold a hash, as substrate build --release writes them, are cached for a year. A path under
+;; /sqlite-explorer/ that names no file is answered with the explorer's page, as the explorer's routes read it. The
+;; site's page and the explorer's page come rendered (app-render), and the server keeps the last 64 pages it rendered
+;; for targets without a query. serve.sub runs the server.
 (require-unqualified std/http)
 (require-unqualified std/http/server)
 (require-unqualified std/http/static)
 (require-unqualified std/http/checks)
-(require-unqualified std/http/url)
 (require-unqualified std/http/routable)
-(require-unqualified std/package/path)
 (require-unqualified std/string)
 (require-unqualified web-ui)
+(require explorer-routes sqlite-explorer/routes)
 (require explorer sqlite-explorer/explorer)
 (require site "site.sub")
 
@@ -21,41 +19,13 @@
 (define website-policy string
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'")
 
-;; The apps: where package.sub's sites put each one, and its page in the built site.
-(struct served [mount string] [page string] [app (ptr web-app)])
-
-(define apps (array served 2)
-  (array-of served (served #:mount "/sqlite-explorer/" #:page "sqlite-explorer/index.html" #:app (& explorer:explorer-app))
-                   (served #:mount "/" #:page "index.html" #:app (& site:website-app))))
-
 (const kept-most u32 64)
 
 (struct kept-page [target string] [html string])
 
 (struct website [server http-server] [files http-files] [hosts http-hosts] [security http-security]
-  [checks (array http-check 2)] [canonical string] [kept (array kept-page 64)] [next u32])
-
-;; The app mounted at the longest path that target starts with.
-(define (served-for [target string]) -> (ptr served)
-  (let ([found (ptr served) 0])
-    (for ([i u32 0]) (< i (-> (slice apps) length)) (+= i 1)
-      (let ([s (& (@ apps i))])
-        (when (and (string-prefix? target (-> s mount)) (or (== found 0) (> (-> s mount length) (-> found mount length))))
-          (set! found s))))
-    found))
-
-;; Whether the request is for a file of the site, which goes out as it is: its path names a file, or has a part that
-;; the files refuse.
-(define (file-request? [w (ptr website)] [r (ptr http-request)]) -> bool
-  (let* ([a (make-arena)] [path (url-unescape (& a) (url-path (-> r target)) #f)] [info fs-info] [found #f])
-    (set! found (or (string-contains? path "/.")
-                    (and (fs-stat (joined-path (-> w files root) path) (& info) 0) (== (-> info kind) fs-file))))
-    (arena-free (& a))
-    found))
-
-(define (page-text [w (ptr website)] [path string]) -> string
-  (let ([b (slice u8)])
-    (if (fs-read-file (joined-path (-> w files root) path) (& b) 0) (cast string b) "")))
+  [checks (array http-check 2)] [apps (array http-app 1)] [pages (array http-page 2)] [canonical string]
+  [kept (array kept-page 64)] [next u32])
 
 (define (kept-html [w (ptr website)] [target string]) -> string
   (for ([i u32 0]) (< i kept-most) (+= i 1)
@@ -71,32 +41,24 @@
     (set! (-> k html) (string-copy html))
     (set! (-> w next) (% (+ (-> w next) 1) kept-most))))
 
-(define (page-sent! [r (ptr http-request)] [status u32] [html string])
-  (http-respond! r status)
-  (http-header! r "content-type" "text/html; charset=utf-8")
-  (http-header! r "cache-control" "no-cache")
-  (http-send-text! r html))
+;; The page that app renders for r, or the one the server kept for r's target.
+(define (kept-render [app (ptr web-app)] [r (ptr http-request)] [out (ptr buffer)] [page string] [mount string]
+                     [to (ptr buffer)]) -> u32
+  (let* ([w (cast (ptr website) (-> (http-request-server r) user))] [kept (kept-html w (-> r target))])
+    (if (> (-> kept length) 0)
+        (begin
+          (buffer-add-string! out kept)
+          url-found)
+        (let ([read (app-render app out page (-> r target) mount to)])
+          (when (and (== read url-found) (> (-> out length) 0) (not (string-contains? (-> r target) "?")))
+            (kept! w (-> r target) (buffer-string out)))
+          read))))
 
-;; Answers r with the page of the app s: rendered, as built when the app does not render it, or the site's own answer
-;; when the app has no page for it.
-(define (app-answered! [w (ptr website)] [r (ptr http-request)] [s (ptr served)])
-  (let ([kept (kept-html w (-> r target))] [page (page-text w (-> s page))])
-    (cond [(> (-> kept length) 0) (page-sent! r 200 kept)]
-          [(== (-> page length) 0) (http-static! r (& (-> w files)))]
-          [else
-           (let* ([out (make-buffer)] [to (make-buffer)]
-                  [read (app-render (-> s app) (& out) page (-> r target) (-> s mount) (& to))])
-             (cond [(== read url-moved) (http-redirect! r 301 (buffer-string (& to)))]
-                   [(== read url-bad) (http-answer-text! r 400 "bad request")]
-                   [(> (-> out length) 0)
-                    (when (and (== read url-found) (not (string-contains? (-> r target) "?")))
-                      (kept! w (-> r target) (buffer-string (& out))))
-                    (page-sent! r (if (== read url-found) 200 404) (buffer-string (& out)))]
-                   [(== read url-found) (http-send-file! r (& (-> w files)) (-> s page))]
-                   [else (http-static! r (& (-> w files)))])
-             (buffer-free! (& out))
-             (buffer-free! (& to)))])
-    (unless (== (-> page length) 0) (free (-> page bytes)))))
+(define (site-page [r (ptr http-request)] [out (ptr buffer)] [page string] [mount string] [to (ptr buffer)]) -> u32
+  (kept-render (& site:website-app) r out page mount to))
+
+(define (explorer-page [r (ptr http-request)] [out (ptr buffer)] [page string] [mount string] [to (ptr buffer)]) -> u32
+  (kept-render (& explorer:explorer-app) r out page mount to))
 
 (define (host-name [r (ptr http-request)]) -> string
   (let ([h (http-request-header r "host")]) (slice h 0 (string-index h #\:))))
@@ -107,21 +69,25 @@
          (http-same? (slice name 0 4) "www.") (http-same? (slice name 4) canonical))))
 
 (define (website-handle [r (ptr http-request)])
-  (let ([w (cast (ptr website) (-> (http-request-server r) user))] [s (served-for (-> r target))])
-    (cond [(www? w r)
-           (let ([to (make-buffer)])
-             (buffer-add-string! (& to) (if (http-request-https? r) "https://" "http://"))
-             (buffer-add-string! (& to) (-> w canonical))
-             (buffer-add-string! (& to) (-> r target))
-             (http-redirect! r 301 (buffer-string (& to)))
-             (buffer-free! (& to)))]
-          [(or (== s 0) (not (or (== (-> r method) "GET") (== (-> r method) "HEAD"))) (file-request? w r))
-           (http-static! r (& (-> w files)))]
-          [else (app-answered! w r s)])))
+  (let ([w (cast (ptr website) (-> (http-request-server r) user))])
+    (if (www? w r)
+        (let ([to (make-buffer)])
+          (buffer-add-string! (& to) (if (http-request-https? r) "https://" "http://"))
+          (buffer-add-string! (& to) (-> w canonical))
+          (buffer-add-string! (& to) (-> r target))
+          (http-redirect! r 301 (buffer-string (& to)))
+          (buffer-free! (& to)))
+        (http-static! r (& (-> w files))))))
 
 (define (website-init! [w (ptr website)] [root string] [names (slice string)] [canonical string])
   (memset w 0 (sizeof website))
   (set! (-> w files root) root)
+  (set! (@ (-> w apps) 0)
+        (http-app #:path "/sqlite-explorer/" #:page "sqlite-explorer/index.html" #:routes explorer-routes:place.url-check))
+  (set! (-> w files apps) (slice (-> w apps)))
+  (set! (@ (-> w pages) 0) (http-page #:path "index.html" #:render site-page))
+  (set! (@ (-> w pages) 1) (http-page #:path "sqlite-explorer/index.html" #:render explorer-page))
+  (set! (-> w files pages) (slice (-> w pages)))
   (set! (-> w files cache) http-hashed-cache)
   (set! (-> w hosts names) names)
   (set! (-> w hosts addresses) #t)
