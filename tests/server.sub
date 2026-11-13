@@ -58,3 +58,23 @@
                       (cast (slice u8) "")))
   (expect-equal (http-test-status (& t)) 301)
   (expect-equal (http-test-header (& t) "location") "https://substrate-lang.com/"))
+
+(define (rendered [target string]) -> string
+  (expect (http-test! (& t) (& (-> w server)) "GET" target (slice (array-of string "host" "substrate-lang.com"))
+                      (cast (slice u8) "")))
+  (expect-equal (http-test-status (& t)) 200)
+  (cast string (http-test-body (& t))))
+
+(test server-rendered
+  (website-init! (& w) "tests/site" (slice names) "substrate-lang.com")
+  (website-render! (& w))
+  (let ([home (rendered "/")])
+    (expect-equal (http-test-header (& t) "content-type") "text/html; charset=utf-8")
+    (expect-equal (http-test-header (& t) "cache-control") "no-cache")
+    (expect (string-contains? home "<style data-ui>"))
+    (expect (string-contains? home "Why use Substrate over C, Rust, or Zig?"))
+    (expect (string-contains? home "<span data-n class=\"k\"><!--t-->define<!----></span>")))
+  (let ([orders (rendered "/sqlite-explorer/database/orders/")])
+    (expect (string-contains? orders "<title data-ui=\"explorer\">orders · SQLite explorer</title>"))
+    (expect (string-contains? orders "href=\"/sqlite-explorer/database/\"")))
+  (expect (string-contains? (rendered "/sqlite-explorer/query/?q=(from%20orders)") "<div id=\"root\"></div>")))

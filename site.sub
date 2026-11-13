@@ -2,6 +2,8 @@
 (require-unqualified web-ui)
 (require-unqualified "sections.sub")
 
+(provide site)
+
 (view (site)
   #:style (include-text "site.css")
   (div ([class "site"])

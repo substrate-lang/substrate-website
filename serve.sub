@@ -50,6 +50,7 @@
         (set! (@ names 2) (buffer-string (& www)))
         (set! count 3)))
     (website-init! (& w) (@ args at) (slice (slice names) 0 count) canonical)
+    (website-render! (& w))
     (set! (-> w server host) address)
     (set! (-> w server secure) secure)
     (set! (-> w server proxies) (cast u32 hops))

@@ -1,21 +1,61 @@
 ;; The site's server: the site's files for the hosts allowed, with security headers and a redirect from www.HOST to
 ;; HOST. Files whose paths hold a hash, as substrate site --release writes them, are cached for a year. A path under
 ;; /sqlite-explorer/ that names no file is answered with the explorer's page, as the explorer's routes read it.
-;; serve.sub runs the server.
+;; website-render! renders the home page and the explorer's pages into the site's pages (render-page), and the server
+;; answers those paths with them. serve.sub runs the server.
+(require-unqualified host/fs)
 (require-unqualified std/http)
 (require-unqualified std/http/server)
 (require-unqualified std/http/static)
 (require-unqualified std/http/checks)
+(require-unqualified std/package/path)
 (require-unqualified std/string)
+(require-unqualified web-ui)
 (require explorer sqlite-explorer/routes)
+(require explorer-app sqlite-explorer/explorer)
+(require site "site.sub")
 
-(provide website website-init! website-handle website-policy)
+(provide website website-init! website-render! website-handle website-policy)
 
 (define website-policy string
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'")
 
+(struct rendered-page [path string] [html string])
+
 (struct website [server http-server] [files http-files] [hosts http-hosts] [security http-security]
-  [checks (array http-check 2)] [apps (array http-app 1)] [canonical string])
+  [checks (array http-check 2)] [apps (array http-app 1)] [canonical string] [pages (array rendered-page 7)]
+  [page-count u32])
+
+;; The explorer's pages that the server renders. A query page with a query is left to the browser, which runs it.
+(define explorer-paths (array string 6)
+  (array-of string "/sqlite-explorer/" "/sqlite-explorer/query/" "/sqlite-explorer/database/"
+            "/sqlite-explorer/database/customers/" "/sqlite-explorer/database/products/" "/sqlite-explorer/database/orders/"))
+
+(define (page-text [w (ptr website)] [path string]) -> string
+  (let ([b (slice u8)])
+    (if (fs-read-file (joined-path (-> w files root) path) (& b) 0) (cast string b) "")))
+
+(define (rendered! [w (ptr website)] [path string] [out (ptr buffer)])
+  (set! (@ (-> w pages) (-> w page-count)) (rendered-page #:path path #:html (buffer-string out)))
+  (+= (-> w page-count) 1))
+
+(define (website-render! [w (ptr website)])
+  (let ([home (page-text w "index.html")] [app (page-text w "sqlite-explorer/index.html")])
+    (when (> (-> home length) 0)
+      (let ([b (make-buffer)])
+        (render-page (& b) home ["root" (site:site)])
+        (rendered! w "/" (& b))))
+    (when (> (-> app length) 0)
+      (for ([i u32 0]) (< i 6) (+= i 1)
+        (let ([b (make-buffer)] [path (@ explorer-paths i)])
+          (render-page (& b) app #:routes explorer:place #:url (string-append 0 "http://localhost" path)
+                       ["root" (explorer-app:explorer)])
+          (rendered! w path (& b)))))))
+
+(define (rendered-of [w (ptr website)] [target string]) -> string
+  (for ([i u32 0]) (< i (-> w page-count)) (+= i 1)
+    (when (== (-> (@ (-> w pages) i) path) target) (return (-> (@ (-> w pages) i) html))))
+  "")
 
 (define (host-name [r (ptr http-request)]) -> string
   (let ([h (http-request-header r "host")]) (slice h 0 (string-index h #\:))))
@@ -34,7 +74,14 @@
           (buffer-add-string! (& to) (-> r target))
           (http-redirect! r 301 (buffer-string (& to)))
           (buffer-free! (& to)))
-        (http-static! r (& (-> w files))))))
+        (let ([page (rendered-of w (-> r target))])
+          (if (and (> (-> page length) 0) (or (== (-> r method) "GET") (== (-> r method) "HEAD")))
+              (begin
+                (http-respond! r 200)
+                (http-header! r "content-type" "text/html; charset=utf-8")
+                (http-header! r "cache-control" "no-cache")
+                (http-send-text! r page))
+              (http-static! r (& (-> w files))))))))
 
 (define (website-init! [w (ptr website)] [root string] [names (slice string)] [canonical string])
   (memset w 0 (sizeof website))

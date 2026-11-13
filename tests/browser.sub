@@ -171,6 +171,7 @@
 
 (define (site-server)
   (website-init! (& served) (@ (host-args) 0) (slice local) "")
+  (website-render! (& served))
   (set! (-> served server listening) announced)
   (let ([why error])
     (unless (http-serve! (& (-> served server)) 0 website-handle (& why)) (host-exit 1 (error-text (& why))))))
@@ -192,4 +193,20 @@
   (with-browser (b "website" #:server site-server #:release #t
                    #:url "sqlite-explorer/query/?q=(from%20products%20(limit%202))")
     (expect-count b (by-css ".query tbody tr") 2)
+    (expect-equal (browser-console b) "")))
+
+(test rendered #:grants ((net "127.0.0.1"))
+  (with-browser (b "website" #:server site-server #:release #t #:url "#playground/json")
+    (expect-count b (by-css ".hero") 1)
+    (expect-count b (by-css "style[data-ui]") 0)
+    (expect-attribute b (by-role "button" "JSON") "aria-pressed" "true")
+    (expect-value b (by-css ".pg-input") (include-text "../examples/json.sub"))
+    (expect-equal (browser-console b) "")))
+
+(test explorer-rendered #:grants ((net "127.0.0.1"))
+  (with-browser (b "website" #:server site-server #:release #t #:url "sqlite-explorer/database/orders/")
+    (expect-count b (by-css ".explorer") 1)
+    (expect-text b (by-css "title") "orders · SQLite explorer")
+    (browser-click! b (by-role "link" "Dashboard"))
+    (expect-text b (nth (by-css ".panel h2") 1) "Revenue by month")
     (expect-equal (browser-console b) "")))
