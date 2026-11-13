@@ -10,7 +10,6 @@
 (require-unqualified std/http/routable)
 (require-unqualified std/string)
 (require-unqualified web-ui)
-(require explorer-routes sqlite-explorer/routes)
 (require explorer sqlite-explorer/explorer)
 (require site "site.sub")
 
@@ -42,23 +41,23 @@
     (set! (-> w next) (% (+ (-> w next) 1) kept-most))))
 
 ;; The page that app renders for r, or the one the server kept for r's target.
-(define (kept-render [app (ptr web-app)] [r (ptr http-request)] [out (ptr buffer)] [page string] [mount string]
-                     [to (ptr buffer)]) -> u32
+(define (kept-render [app (ptr web-app)] [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)])
+  -> u32
   (let* ([w (cast (ptr website) (-> (http-request-server r) user))] [kept (kept-html w (-> r target))])
     (if (> (-> kept length) 0)
         (begin
           (buffer-add-string! out kept)
           url-found)
-        (let ([read (app-render app out page (-> r target) mount to)])
+        (let ([read (app-render app out page (-> r target) to)])
           (when (and (== read url-found) (> (-> out length) 0) (not (string-contains? (-> r target) "?")))
             (kept! w (-> r target) (buffer-string out)))
           read))))
 
-(define (site-page [r (ptr http-request)] [out (ptr buffer)] [page string] [mount string] [to (ptr buffer)]) -> u32
-  (kept-render (& site:website-app) r out page mount to))
+(define (site-page [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)]) -> u32
+  (kept-render (& site:website-app) r out page to))
 
-(define (explorer-page [r (ptr http-request)] [out (ptr buffer)] [page string] [mount string] [to (ptr buffer)]) -> u32
-  (kept-render (& explorer:explorer-app) r out page mount to))
+(define (explorer-page [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)]) -> u32
+  (kept-render (& explorer:explorer-app) r out page to))
 
 (define (host-name [r (ptr http-request)]) -> string
   (let ([h (http-request-header r "host")]) (slice h 0 (string-index h #\:))))
@@ -83,7 +82,7 @@
   (memset w 0 (sizeof website))
   (set! (-> w files root) root)
   (set! (@ (-> w apps) 0)
-        (http-app #:path "/sqlite-explorer/" #:page "sqlite-explorer/index.html" #:routes explorer-routes:place.url-check))
+        (http-app #:path "/sqlite-explorer/" #:page "sqlite-explorer/index.html" #:routes 0))
   (set! (-> w files apps) (slice (-> w apps)))
   (set! (@ (-> w pages) 0) (http-page #:path "index.html" #:render site-page))
   (set! (@ (-> w pages) 1) (http-page #:path "sqlite-explorer/index.html" #:render explorer-page))
