@@ -45,6 +45,14 @@
             (chromium pkgs)    # the headless browser of the browser tests (above)
           ];
         };
+        # WebKit, Safari's engine, with Playwright to drive it: nix develop .#webkit
+        webkit = pkgs.mkShell {
+          packages = [ (substrate pkgs) pkgs.nodejs ];
+          PLAYWRIGHT_CORE = "${pkgs.playwright-driver}";
+          PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers.override {
+            withChromium = false; withChromiumHeadlessShell = false; withFirefox = false; withFfmpeg = false;
+          };
+        };
       });
     };
 }
