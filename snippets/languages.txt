@@ -1,8 +1,9 @@
-;; prove properties of code with a dependently typed language
+;; bend2 gives new syntax for a dependently typed language
 (language bend2)
 
-(type N Data [Z] [S [p : N]])
+(type N Data [Z] [S [p : N]]) ; natural number
 
+;; a law states what its def must prove
 (law (add [a : N] [b : N]) N)
 (def (add a b)
   (match a

@@ -1,5 +1,4 @@
-;; a Scheme that frees each value by reference counting,
-;; right after its last use, with no garbage collector
+;; a reference-counted Scheme, no memory management or GC
 (language scheme)
 
 (define (numbers n)
@@ -12,4 +11,5 @@
     (printf "length ~a, " (length xs))
     (printf "~a live\n" (- (live-nodes) before))))
 
-(demo) ; 1000 live, length 1000, 0 live
+(demo)
+;; 1000 live, length 1000, 0 live
