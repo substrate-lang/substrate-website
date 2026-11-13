@@ -23,6 +23,24 @@
     (span ([class "command"]) (text (slice s 0 (string-index s #\newline))))
     (text (slice s (string-index s #\newline)))))
 
+(view (bench-row [name string] [share string] [value string] [ours bool])
+  (div ([class (if ours "bench-row ours" "bench-row")] [style share])
+    (span ([class "bench-name"]) (text name))
+    (span ([class "bench-track"]) (span ([class "bench-bar"])) (span ([class "bench-value"]) (text value)))))
+
+;; Numbers from the substrate repository's benchmarks (bench/)
+(view (benchmarks)
+  (div ([class "code bench"])
+    (div ([class "bench-chart"])
+      (p ([class "bench-title"]) "run time, lower is faster")
+      (bench-row "Substrate" "--w: 1" "1.43×" #t)
+      (bench-row "C -O2 (Wasm)" "--w: 0.70" "1.00×" #f)
+      (bench-row "C -O2 (native)" "--w: 0.49" "0.70×" #f))
+    (div ([class "bench-chart"])
+      (p ([class "bench-title"]) "lines compiled per second")
+      (bench-row "Substrate" "--w: 1" "46.5k" #t)
+      (bench-row "C -O2" "--w: 0.31" "14.3k" #f))))
+
 (view (code-panel [name string] [source string])
   (div ([class "panel"])
     (div ([class "panel-bar"])
@@ -93,10 +111,10 @@
           (console (include-text "snippets/sandbox.txt")))
         (article ([class "feature"])
           (p ([class "number"]) "04")
-          (h3 "Runs on any platform")
-          (p "Substrate compiles to Wasm and runs on any platform that supports it, including the web. This website "
-             "and the server that serves it are written in Substrate.")
-          (snippet ([source (include-text "snippets/web.txt")])))))))
+          (h3 "Fast compilation and execution")
+          (p "Substrate compiles code at ~47k lines per second, and its programs run within about 1.4× of C compiled "
+             "to Wasm. The compiler builds itself in about a quarter of a second.")
+          (benchmarks))))))
 
 (view (examples)
   (section ([id "examples"] [class "section"])
@@ -166,10 +184,11 @@
       (h2 "FAQ")
       (details
         (summary "Why use Substrate over C, Rust, or Zig?")
-        (p "These languages are great and they all compile to WebAssembly. Comparatively, Substrate makes the most "
-           "sense if you want a very fast (and small) toolchain or more powerful compile-time metaprogramming for "
-           "your domain. Substrate also provides more extensive tooling for building and testing code intended to "
-           "run in the browser."))
+        (p "These languages are great and compile to WebAssembly, but Wasm is not their primary target. Substrate "
+           "makes the most sense for domains that need a small and fast Wasm-based toolchain that runs anywhere "
+           "(including the browser), or powerful compile-time metaprogramming (where macros can build entire "
+           "languages). Substrate also provides dedicated tooling for deploying and testing code intended to run in "
+           "the browser."))
       (details
         (summary "Are LLMs good at using Substrate?")
         (p "Frontier models are very familiar with C semantics and write performant S-expression-style C with few "
@@ -185,15 +204,15 @@
            "battle-tested."))
       (details
         (summary "Why a language like Substrate now?")
-        (p "How will programming languages and infrastructure evolve in the era of LLMs? People have many opinions, "
-           "but we believe WebAssembly will play an important role due to the security and performance properties it "
-           "provides. Along these lines, one way to see Substrate is as a meta-language that enables rapid "
-           "exploration of what is possible on WebAssembly. Whether the future of programming becomes more oriented "
-           "towards high-level verification, or moves closer to the metal, Substrate is a platform that can empower "
-           "both.")))))
+        (p "Substrate is an answer to a broader question: how will programming change in the era of LLMs? We believe "
+           "WebAssembly will play an increasingly important role in infrastructure due to the security properties it "
+           "provides, and one way to see Substrate is as a meta-language that enables rapid exploration of what is "
+           "possible on WebAssembly. Whether the future of programming becomes more oriented towards high-level "
+           "verification, or moves closer to the metal, Substrate is a platform that can empower both.")))))
 
 (view (site-footer)
   (footer ([class "foot"])
     (div ([class "wrap bar"])
       (wordmark)
+      (span ([class "copyright"]) "© 2026 Substrate Team")
       (a ([href "https://github.com/substrate-lang/substrate"]) "Read the source ↗"))))
