@@ -23,6 +23,24 @@
     (span ([class "command"]) (text (slice s 0 (string-index s #\newline))))
     (text (slice s (string-index s #\newline)))))
 
+(view (bench-row [name string] [share string] [value string] [ours bool])
+  (div ([class (if ours "bench-row ours" "bench-row")] [style share])
+    (span ([class "bench-name"]) (text name))
+    (span ([class "bench-track"]) (span ([class "bench-bar"])) (span ([class "bench-value"]) (text value)))))
+
+;; Numbers from the substrate repository's benchmarks (bench/)
+(view (benchmarks)
+  (div ([class "code bench"])
+    (div ([class "bench-chart"])
+      (p ([class "bench-title"]) "run time, lower is faster")
+      (bench-row "Substrate" "--w: 1" "1.43×" #t)
+      (bench-row "C -O2 (Wasm)" "--w: 0.70" "1.00×" #f)
+      (bench-row "C -O2 (native)" "--w: 0.49" "0.70×" #f))
+    (div ([class "bench-chart"])
+      (p ([class "bench-title"]) "lines compiled per second")
+      (bench-row "Substrate" "--w: 1" "46.5k" #t)
+      (bench-row "C -O2" "--w: 0.31" "14.3k" #f))))
+
 (view (code-panel [name string] [source string])
   (div ([class "panel"])
     (div ([class "panel-bar"])
@@ -93,10 +111,10 @@
           (console (include-text "snippets/sandbox.txt")))
         (article ([class "feature"])
           (p ([class "number"]) "04")
-          (h3 "Runs on any platform")
-          (p "Substrate compiles to Wasm and runs on any platform that supports it, including the web. This website "
-             "and the server that serves it are written in Substrate.")
-          (snippet ([source (include-text "snippets/web.txt")])))))))
+          (h3 "Fast compilation and execution")
+          (p "Substrate compiles code at ~47k lines per second, and its programs run within about 1.4× of C compiled "
+             "to Wasm. The compiler builds itself in about a quarter of a second.")
+          (benchmarks))))))
 
 (view (examples)
   (section ([id "examples"] [class "section"])

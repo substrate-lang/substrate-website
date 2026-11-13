@@ -107,7 +107,8 @@ a { color: inherit; }
 
 .features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden;
             border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
-.feature { padding: 30px 32px 32px; background: var(--ground); transition: background 0.2s; }
+.feature { display: grid; grid-row: span 4; grid-template-rows: subgrid; padding: 30px 32px 32px;
+           background: var(--ground); transition: background 0.2s; }
 .feature:hover { background: #0c110e; }
 .feature .number { margin: 0 0 18px; color: var(--green); font: 600 12px/1 var(--mono); }
 .feature h3 { margin: 0 0 8px; font: 650 18px/1.3 var(--sans); letter-spacing: -0.01em; }
@@ -116,6 +117,18 @@ a { color: inherit; }
                  background: var(--sunken); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .console { color: var(--muted); }
 .console .command { color: var(--ink); }
+.feature .bench { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; gap: 0 28px;
+                  padding: 7px 16px; font-size: 11px; line-height: 12.4px; white-space: normal; }
+.bench-chart { display: grid; grid-template-columns: max-content minmax(0, 1fr); grid-template-rows: 16.5px;
+               grid-auto-rows: 12.4px; align-content: start; align-items: center; column-gap: 8px; }
+.feature .bench-title { grid-column: 1 / -1; align-self: start; color: var(--faint); }
+.bench-row { display: contents; }
+.bench-name { color: var(--muted); }
+.bench-track { display: flex; align-items: center; }
+.bench-bar { flex: none; width: calc((100% - 7ch) * var(--w)); height: 6px; border-radius: 2px; background: #3a473f; }
+.bench-value { margin-left: 6px; color: var(--muted); }
+.ours .bench-bar { background: var(--green); }
+.ours .bench-value { color: var(--ink); }
 
 .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto 1fr;
          gap: 20px; }
@@ -219,6 +232,7 @@ a.more:hover { text-decoration: underline; }
   .pg-editor { border-right: 0; border-bottom: 1px solid var(--line); }
   .pg-scroll { height: 400px; }
   .pg-output { height: 240px; }
+  .feature .bench { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 }
 @media (max-width: 720px) {
   .wrap { padding: 0 16px; }
