@@ -246,6 +246,13 @@
   (clear-output! m)
   (idle-status! m))
 
+;; show-console! scrolls the playground's bottom into view when it is below the window, as on a phone.
+(define (show-console! [m (ptr model)])
+  (let* ([box (dom-call-node (-> m panel) "getBoundingClientRect" (dom-values))] [bottom (dom-read-number box "bottom")])
+    (dom-forget-node! box)
+    (when (> bottom (dom-read-number dom-document "documentElement.clientHeight"))
+      (dom-call-with! (-> m panel) "scrollIntoView" (dom-values (dom-number 0.0))))))
+
 (define (scroll-heard [source u32] [kind u32] [id u32] [tag (ptr void)] [value i32]) (send! (scroll-to)))
 
 ;; byte-at gives the byte of s at an offset from the editor, which counts in UTF-16 units.
@@ -291,7 +298,9 @@
             (let ([text (line-break (-> m code) (byte-at (-> m code) (cast u32 start)))])
               (inserted! text)
               (free (-> text bytes)))])]
-    [run (run! m)]
+    [run
+     (run! m)
+     (show-console! m)]
     [stop (stop! m)]
     [reset
      (set-code! m (-> (@ examples (-> m example)) source))

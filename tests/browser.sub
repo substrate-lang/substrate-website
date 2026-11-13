@@ -90,6 +90,14 @@
     (browser-click! b (by-text "Compile the compiler!"))
     (expect (< (-> (browser-box b (by-css ".playground")) y) 120.0))))
 
+(test run-on-phone
+  (with-browser (b "website")
+    (browser-resize! b 390 800)
+    (browser-click! b (by-css ".pg-run"))
+    (finished b)
+    (let ([status (browser-box b (by-css ".pg-status"))])
+      (expect (<= (+ (-> status y) (-> status height)) 800.0)))))
+
 (test editing
   (with-browser (b "website")
     (expect-attribute b (by-css ".pg-reset") "disabled" "")
