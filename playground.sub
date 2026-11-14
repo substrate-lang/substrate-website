@@ -328,10 +328,15 @@
   (set! (-> m status) (string-copy ""))
   (set! (-> m error) (string-copy ""))
   (set! (-> m output) (make-buffer))
+  (set-code! m (-> (@ examples 0) source))
+  (idle-status! m))
+
+(define (start [m (ptr model)])
   (set! (-> m tag) (subscribe! worker-heard))
   (let ([i (example-in-url)])
-    (load! m (if (< i example-count) i 0))
-    (when (< i example-count) (timer-after 0.0 (request! scroll-heard)))))
+    (when (< i example-count)
+      (load! m i)
+      (timer-after 0.0 (request! scroll-heard)))))
 
 (define (release [m (ptr model)])
   (when (!= (-> m runner) 0) (worker-stop (-> m runner)))
@@ -370,6 +375,7 @@
   #:messages message
   #:update update
   #:init init
+  #:start start
   #:free release
   #:trapped trapped
   (div ([class "playground"] [id (-> (@ examples (-> m example)) anchor)] [node (-> m panel)]

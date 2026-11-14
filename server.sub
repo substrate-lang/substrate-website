@@ -1,21 +1,71 @@
 ;; The site's server: the site's files for the hosts allowed, with security headers and a redirect from www.HOST to
-;; HOST. Files whose paths hold a hash, as substrate site --release writes them, are cached for a year. A path under
-;; /sqlite-explorer/ that names no file is answered with the explorer's page, as the explorer's routes read it.
-;; serve.sub runs the server.
+;; HOST. Files whose paths hold a hash, as substrate build writes them, are cached for a year. A path under
+;; /sqlite-explorer/ that names no file gets the explorer's page. The site's page and the explorer's page come rendered
+;; (app-render), and the explorer's routes give its page's status. The server keeps the last 64 pages it rendered for
+;; targets without a query. It keeps each with the page as built, so a new build renders them again. serve.sub runs the
+;; server.
 (require-unqualified std/http)
 (require-unqualified std/http/server)
 (require-unqualified std/http/static)
 (require-unqualified std/http/checks)
+(require-unqualified std/http/routable)
+(require-unqualified std/http/url)
 (require-unqualified std/string)
-(require explorer sqlite-explorer/routes)
+(require-unqualified web-ui)
+(require explorer sqlite-explorer/explorer)
+(require site "site.sub")
 
 (provide website website-init! website-handle website-policy)
 
 (define website-policy string
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'")
 
+(const kept-most u32 64)
+
+(struct kept-page [target string] [page string] [html string])
+
 (struct website [server http-server] [files http-files] [hosts http-hosts] [security http-security]
-  [checks (array http-check 2)] [apps (array http-app 1)] [canonical string])
+  [checks (array http-check 2)] [pages (array http-page 2)] [canonical string] [kept (array kept-page 64)] [next u32])
+
+(define (kept-html [w (ptr website)] [target string] [page string]) -> string
+  (for ([i u32 0]) (< i kept-most) (+= i 1)
+    (let ([k (& (@ (-> w kept) i))])
+      (when (and (> (-> k target length) 0) (== (-> k target) target) (== (-> k page) page)) (return (-> k html)))))
+  "")
+
+(define (kept! [w (ptr website)] [target string] [page string] [html string])
+  (let ([k (& (@ (-> w kept) (-> w next)))])
+    (unless (== (-> k target length) 0)
+      (free (-> k target bytes))
+      (free (-> k page bytes))
+      (free (-> k html bytes)))
+    (set! (-> k target) (string-copy target))
+    (set! (-> k page) (string-copy page))
+    (set! (-> k html) (string-copy html))
+    (set! (-> w next) (% (+ (-> w next) 1) kept-most))))
+
+(define (kept-render [app (ptr web-app)] [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)])
+  -> u32
+  (let* ([w (cast (ptr website) (-> (http-request-server r) user))] [kept (kept-html w (-> r target) page)])
+    (if (> (-> kept length) 0)
+        (begin
+          (buffer-add-string! out kept)
+          url-found)
+        (let ([read (app-render app out page (-> r target) to)])
+          (when (and (== read url-found) (> (-> out length) 0) (not (string-contains? (-> r target) "?")))
+            (kept! w (-> r target) page (buffer-string out)))
+          read))))
+
+(define (site-page [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)]) -> u32
+  (kept-render (& site:website-app) r out page to))
+
+(define (explorer-page [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)]) -> u32
+  (kept-render (& explorer:explorer-app) r out page to))
+
+(define (explorer-path [r (ptr http-request)] [f (ptr http-files)]) -> bool
+  (unless (string-prefix? (url-path (-> r target)) "/sqlite-explorer/") (return #f))
+  (http-send-file! r f "sqlite-explorer/index.html")
+  #t)
 
 (define (host-name [r (ptr http-request)]) -> string
   (let ([h (http-request-header r "host")]) (slice h 0 (string-index h #\:))))
@@ -39,9 +89,10 @@
 (define (website-init! [w (ptr website)] [root string] [names (slice string)] [canonical string])
   (memset w 0 (sizeof website))
   (set! (-> w files root) root)
-  (set! (@ (-> w apps) 0)
-        (http-app #:path "/sqlite-explorer/" #:page "sqlite-explorer/index.html" #:routes explorer:place.url-check))
-  (set! (-> w files apps) (slice (-> w apps)))
+  (set! (@ (-> w pages) 0) (http-page #:path "index.html" #:render site-page))
+  (set! (@ (-> w pages) 1) (http-page #:path "sqlite-explorer/index.html" #:render explorer-page))
+  (set! (-> w files pages) (slice (-> w pages)))
+  (set! (-> w files fallback) explorer-path)
   (set! (-> w files cache) http-hashed-cache)
   (set! (-> w hosts names) names)
   (set! (-> w hosts addresses) #t)

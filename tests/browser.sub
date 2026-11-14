@@ -184,12 +184,28 @@
     (expect-text b (by-css ".query h1") "Query")))
 
 (test served #:grants ((net "127.0.0.1"))
-  (with-browser (b "website" #:server site-server #:release #t)
+  (with-browser (b "website" #:server site-server)
     (ran b "Hello" "Hello, Substrate!\nfib 0 = 0\nfib 1 = 1\nfib 2 = 1\nfib 3 = 2\nfib 4 = 3\nfib 5 = 5\nfib 6 = 8\nfib 7 = 13\nfib 8 = 21\nfib 9 = 34\nfib 10 = 55\n")
     (expect-equal (browser-console b) "")))
 
 (test explorer-served #:grants ((net "127.0.0.1"))
-  (with-browser (b "website" #:server site-server #:release #t
+  (with-browser (b "website" #:server site-server
                    #:url "sqlite-explorer/query/?q=(from%20products%20(limit%202))")
     (expect-count b (by-css ".query tbody tr") 2)
+    (expect-equal (browser-console b) "")))
+
+(test rendered #:grants ((net "127.0.0.1"))
+  (with-browser (b "website" #:server site-server #:url "#playground/json")
+    (expect-count b (by-css ".hero") 1)
+    (expect-count b (by-css "style[data-ui]") 0)
+    (expect-attribute b (by-role "button" "JSON") "aria-pressed" "true")
+    (expect-value b (by-css ".pg-input") (include-text "../examples/json.sub"))
+    (expect-equal (browser-console b) "")))
+
+(test explorer-rendered #:grants ((net "127.0.0.1"))
+  (with-browser (b "website" #:server site-server #:url "sqlite-explorer/database/orders/")
+    (expect-count b (by-css ".explorer") 1)
+    (expect-text b (by-css "title") "orders · SQLite explorer")
+    (browser-click! b (by-role "link" "Dashboard"))
+    (expect-text b (nth (by-css ".panel h2") 1) "Revenue by month")
     (expect-equal (browser-console b) "")))

@@ -1,7 +1,10 @@
+(require-unqualified host/fs)
+(require-unqualified std/test/test)
 (require-unqualified std/http/test)
 (require-unqualified std/http/server)
 (require-unqualified "../server.sub")
 (require-unqualified std/string)
+(require-unqualified std/package/path)
 
 (define w website)
 (define names (array string 3) (array-of string ".localhost" "substrate-lang.com" "www.substrate-lang.com"))
@@ -58,3 +61,43 @@
                       (cast (slice u8) "")))
   (expect-equal (http-test-status (& t)) 301)
   (expect-equal (http-test-header (& t) "location") "https://substrate-lang.com/"))
+
+(define (rendered [target string]) -> string
+  (expect (http-test! (& t) (& (-> w server)) "GET" target (slice (array-of string "host" "substrate-lang.com"))
+                      (cast (slice u8) "")))
+  (expect-equal (http-test-status (& t)) 200)
+  (cast string (http-test-body (& t))))
+
+(test server-rendered
+  (website-init! (& w) "tests/site" (slice names) "substrate-lang.com")
+  (let ([home (rendered "/")])
+    (expect-equal (http-test-header (& t) "content-type") "text/html; charset=utf-8")
+    (expect-equal (http-test-header (& t) "cache-control") "no-cache")
+    (expect (string-contains? home "<style data-ui>"))
+    (expect (string-contains? home "Why use Substrate over C, Rust, or Zig?"))
+    (expect (string-contains? home "<span data-n class=\"k\"><!--t-->define<!----></span>")))
+  (let ([orders (rendered "/sqlite-explorer/database/orders/")])
+    (expect (string-contains? orders "<title data-ui=\"explorer\">orders · SQLite explorer</title>"))
+    (expect (string-contains? orders "href=\"/sqlite-explorer/database/\"")))
+  (expect (string-contains? (rendered "/sqlite-explorer/query/?q=(from%20orders)") "<div id=\"root\"></div>")))
+
+(test server-explorer-paths
+  (expect-equal (got "/sqlite-explorer/database" "substrate-lang.com") 301)
+  (expect-equal (http-test-header (& t) "location") "/sqlite-explorer/database/")
+  (expect-equal (got "/sqlite-explorer/database/nope/" "substrate-lang.com") 200)
+  (expect (string-contains? (cast string (http-test-body (& t))) "<div id=\"root\"></div>"))
+  (expect-equal (got "/nope/" "substrate-lang.com") 404)
+  (expect-equal (got "/sqlite-explorer/database/orders/" "substrate-lang.com") 200)
+  (let ([first (string-copy (cast string (http-test-body (& t))))])
+    (expect-equal (rendered "/sqlite-explorer/database/orders/") first)))
+
+(test server-kept
+  (let ([root (joined-path (scratch-directory) "site")] [page (slice u8)] [why error])
+    (expect (fs-make-dir (joined-path root "sqlite-explorer") (& why)))
+    (expect (fs-read-file "tests/site/sqlite-explorer/index.html" (& page) (& why)))
+    (expect (fs-write-file (joined-path root "sqlite-explorer/index.html") page (& why)))
+    (website-init! (& w) root (slice names) "substrate-lang.com")
+    (expect (not (string-contains? (rendered "/sqlite-explorer/database/orders/") "<!--built again-->")))
+    (expect (fs-write-file (joined-path root "sqlite-explorer/index.html")
+                           (cast (slice u8) (string-append 0 (cast string page) "<!--built again-->\n")) (& why)))
+    (expect (string-contains? (rendered "/sqlite-explorer/database/orders/") "<!--built again-->"))))

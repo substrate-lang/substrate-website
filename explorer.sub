@@ -1,6 +1,5 @@
 ;; The SQLite explorer (sqlite-explorer), which the site mounts at /sqlite-explorer/.
 (require-unqualified web-ui)
-(require-unqualified sqlite-explorer/routes)
 (require-unqualified sqlite-explorer/explorer)
 
-(attach #:routes place ["root" (explorer)])
+(attach explorer-app)

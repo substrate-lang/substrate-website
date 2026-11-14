@@ -2,6 +2,8 @@
 (require-unqualified web-ui)
 (require-unqualified "sections.sub")
 
+(provide website-app)
+
 (view (site)
   #:style (include-text "site.css")
   (div ([class "site"])
@@ -15,4 +17,6 @@
       (faq))
     (site-footer)))
 
-(attach ["root" (site)])
+(app website-app (site))
+
+(attach website-app)
