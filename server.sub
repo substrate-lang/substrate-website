@@ -2,7 +2,8 @@
 ;; HOST. Files whose paths hold a hash, as substrate build writes them, are cached for a year. A path under
 ;; /sqlite-explorer/ that names no file gets the explorer's page. The site's page and the explorer's page come rendered
 ;; (app-render), and the explorer's routes give its page's status. The server keeps the last 64 pages it rendered for
-;; targets without a query, each with the page as built, so a new build renders them again. serve.sub runs the server.
+;; targets without a query. It keeps each with the page as built, so a new build renders them again. serve.sub runs the
+;; server.
 (require-unqualified std/http)
 (require-unqualified std/http/server)
 (require-unqualified std/http/static)
@@ -43,7 +44,6 @@
     (set! (-> k html) (string-copy html))
     (set! (-> w next) (% (+ (-> w next) 1) kept-most))))
 
-;; The page that app renders for r, or the one the server kept for r's target and the page as built.
 (define (kept-render [app (ptr web-app)] [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)])
   -> u32
   (let* ([w (cast (ptr website) (-> (http-request-server r) user))] [kept (kept-html w (-> r target) page)])
@@ -62,7 +62,6 @@
 (define (explorer-page [r (ptr http-request)] [out (ptr buffer)] [page string] [to (ptr buffer)]) -> u32
   (kept-render (& explorer:explorer-app) r out page to))
 
-;; The explorer's page for a path under /sqlite-explorer/ that names no file.
 (define (explorer-path [r (ptr http-request)] [f (ptr http-files)]) -> bool
   (unless (string-prefix? (url-path (-> r target)) "/sqlite-explorer/") (return #f))
   (http-send-file! r f "sqlite-explorer/index.html")

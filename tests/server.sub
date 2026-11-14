@@ -91,7 +91,6 @@
   (let ([first (string-copy (cast string (http-test-body (& t))))])
     (expect-equal (rendered "/sqlite-explorer/database/orders/") first)))
 
-;; A page that the server kept is rendered again once the page as built changes, as a new build changes it.
 (test server-kept
   (let ([root (joined-path (scratch-directory) "site")] [page (slice u8)] [why error])
     (expect (fs-make-dir (joined-path root "sqlite-explorer") (& why)))
