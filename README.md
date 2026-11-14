@@ -10,7 +10,7 @@ The dev shell (`nix develop`) has substrate, from its npm release. In it:
 
     substrate test -A                  # the tests, most of them in Chromium
     substrate build                    # the site, in build/sites/website, and its server
-    substrate build --release          # the site to deploy, in the same place
+    substrate build -s                 # the same without the programs' names, to deploy
     social/render.sh                   # the social card, assets/og.png, from social/card.html
 
 The site's server, at http://127.0.0.1:8000/:
