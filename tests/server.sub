@@ -1,7 +1,10 @@
+(require-unqualified host/fs)
+(require-unqualified std/test/test)
 (require-unqualified std/http/test)
 (require-unqualified std/http/server)
 (require-unqualified "../server.sub")
 (require-unqualified std/string)
+(require-unqualified std/package/path)
 
 (define w website)
 (define names (array string 3) (array-of string ".localhost" "substrate-lang.com" "www.substrate-lang.com"))
@@ -78,7 +81,7 @@
     (expect (string-contains? orders "href=\"/sqlite-explorer/database/\"")))
   (expect (string-contains? (rendered "/sqlite-explorer/query/?q=(from%20orders)") "<div id=\"root\"></div>")))
 
-(test server-apps
+(test server-explorer-paths
   (expect-equal (got "/sqlite-explorer/database" "substrate-lang.com") 301)
   (expect-equal (http-test-header (& t) "location") "/sqlite-explorer/database/")
   (expect-equal (got "/sqlite-explorer/database/nope/" "substrate-lang.com") 200)
@@ -87,3 +90,15 @@
   (expect-equal (got "/sqlite-explorer/database/orders/" "substrate-lang.com") 200)
   (let ([first (string-copy (cast string (http-test-body (& t))))])
     (expect-equal (rendered "/sqlite-explorer/database/orders/") first)))
+
+;; A page that the server kept is rendered again once the page as built changes, as a new build changes it.
+(test server-kept
+  (let ([root (joined-path (scratch-directory) "site")] [page (slice u8)] [why error])
+    (expect (fs-make-dir (joined-path root "sqlite-explorer") (& why)))
+    (expect (fs-read-file "tests/site/sqlite-explorer/index.html" (& page) (& why)))
+    (expect (fs-write-file (joined-path root "sqlite-explorer/index.html") page (& why)))
+    (website-init! (& w) root (slice names) "substrate-lang.com")
+    (expect (not (string-contains? (rendered "/sqlite-explorer/database/orders/") "<!--built again-->")))
+    (expect (fs-write-file (joined-path root "sqlite-explorer/index.html")
+                           (cast (slice u8) (string-append 0 (cast string page) "<!--built again-->\n")) (& why)))
+    (expect (string-contains? (rendered "/sqlite-explorer/database/orders/") "<!--built again-->"))))
