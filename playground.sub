@@ -120,7 +120,7 @@
 ;; ---- workers ----
 
 (define (worker-heard [source u32] [kind u32] [w u32] [tag (ptr void)] [value i32])
-  (send! (worker-event w kind value)))
+  (send! (message .worker-event w kind value)))
 
 (define (output-options) -> worker-options
   (let ([o worker-options])
@@ -172,10 +172,10 @@
     (if (not (answer.wire-read (& a) (buffer-bytes (& b)) (& got) (& why)))
         (set-status! m tone-bad "Failed")
         (match got
-          [(ran compile-ms run-ms)
+          [(.ran compile-ms run-ms)
            (let ([compiled (ms compile-ms)] [took (ms run-ms)])
              (printed-status! m (lambda () (printf "Compiled in ~a ms, ran in ~a ms" compiled took))))]
-          [(failed error)
+          [(.failed error)
            (set-error! m error)
            (set-status! m tone-bad "Failed")]))
     (arena-free (& a))
@@ -251,9 +251,9 @@
   (let* ([box (dom-call-node (-> m panel) "getBoundingClientRect" (dom-values))] [bottom (dom-read-number box "bottom")])
     (dom-forget-node! box)
     (when (> bottom (dom-read-number dom-document "documentElement.clientHeight"))
-      (dom-call-with! (-> m panel) "scrollIntoView" (dom-values (dom-number 0.0))))))
+      (dom-call-with! (-> m panel) "scrollIntoView" (dom-values (.number 0.0))))))
 
-(define (scroll-heard [source u32] [kind u32] [id u32] [tag (ptr void)] [value i32]) (send! (scroll-to)))
+(define (scroll-heard [source u32] [kind u32] [id u32] [tag (ptr void)] [value i32]) (send! (message .scroll-to)))
 
 ;; byte-at gives the byte of s at an offset from the editor, which counts in UTF-16 units.
 (define (byte-at [s string] [units u32]) -> u32
@@ -278,14 +278,14 @@
 ;; inserted! puts text in place of the editor's selection, as typing it would.
 (define (inserted! [text string])
   (dom-call-with! dom-document "execCommand"
-                  (slice (array-of dom-value (dom-text "insertText") (dom-number 0.0) (dom-text text)))))
+                  (slice (array-of dom-value (.text "insertText") (.number 0.0) (.text text)))))
 
 (define (update [m (ptr model)] [e (ptr message)])
   (match e
-    [(edited text)
+    [(.edited text)
      (set-code! m text)
      (set! (-> m edited) #t)]
-    [(key-pressed key control meta shift start)
+    [(.key-pressed key control meta shift start)
      (cond [(and (== key "Enter") (or control meta))
             (prevent-default!)
             (run! m)]
@@ -298,29 +298,29 @@
             (let ([text (line-break (-> m code) (byte-at (-> m code) (cast u32 start)))])
               (inserted! text)
               (free (-> text bytes)))])]
-    [run
+    [.run
      (run! m)
      (show-console! m)]
-    [stop (stop! m)]
-    [reset
+    [.stop (stop! m)]
+    [.reset
      (set-code! m (-> (@ examples (-> m example)) source))
      (set! (-> m edited) #f)]
-    [clear (clear-output! m)]
-    [(choose index)
+    [.clear (clear-output! m)]
+    [(.choose index)
      (load! m index)
      (let ([hash (make-buffer)])
        (buffer-add-string! (& hash) "#playground/")
        (buffer-add-string! (& hash) (-> (@ examples index) slug))
        (location-replace (buffer-string (& hash)) 0)
        (buffer-free! (& hash)))]
-    [hash-changed
+    [.hash-changed
      (let ([i (example-in-url)])
        (when (< i example-count)
          (unless (== i (-> m example)) (load! m i))
          (dom-call! (-> m panel) "scrollIntoView")))]
-    [scroll-to (dom-call! (-> m panel) "scrollIntoView")]
-    [(seen visible) (when visible (start-runner! m))]
-    [(worker-event w kind value) (heard! m w kind value)]))
+    [.scroll-to (dom-call! (-> m panel) "scrollIntoView")]
+    [(.seen visible) (when visible (start-runner! m))]
+    [(.worker-event w kind value) (heard! m w kind value)]))
 
 (define (init [m (ptr model)])
   (examples-init!)
@@ -367,7 +367,7 @@
 (view (example-tab [e (ptr example)] [chosen u32])
   (button ([class (if (== (-> e index) chosen) "tab on" "tab")]
            [aria-pressed (if (== (-> e index) chosen) "true" "false")]
-           [on click (choose (-> e index))])
+           [on click (.choose (-> e index))])
     (text (-> e label))))
 
 (component (playground)
@@ -379,16 +379,16 @@
   #:free release
   #:trapped trapped
   (div ([class "playground"] [id (-> (@ examples (-> m example)) anchor)] [node (-> m panel)]
-        [on-window hashchange hash-changed]
-        [on visibility (seen (event visible))])
+        [on-window hashchange .hash-changed]
+        [on visibility (.seen (event visible))])
     (div ([class "pg-bar"])
       (div ([class "pg-tabs"] [role "group"] [aria-label "Examples"])
         (each [e (& (@ examples 0)) example-count] #:key (-> e index) (example-tab e (-> m example))))
       (div ([class "pg-actions"])
-        (button ([class "pg-reset"] [disabled (not (-> m edited))] [on click reset]) "Reset")
+        (button ([class "pg-reset"] [disabled (not (-> m edited))] [on click .reset]) "Reset")
         (if (-> m running)
-            (button ([class "pg-stop"] [on click stop]) "Stop")
-            (button ([class "pg-run"] [on click run]) "Run"))))
+            (button ([class "pg-stop"] [on click .stop]) "Stop")
+            (button ([class "pg-run"] [on click .run]) "Run"))))
     (div ([class "pg-body"])
       (div ([class "pg-editor"])
         (div ([class "pg-head"])
@@ -398,13 +398,13 @@
             (pre ([class "code pg-highlight"] [aria-hidden "true"]) (code-view (& (-> m tokens)) (-> m code)) "\n")
             (textarea ([class "pg-input"] [value (-> m code)] [readonly (built-in? m)] [spellcheck "false"]
                        [autocapitalize "off"] [autocomplete "off"] [wrap "off"] [aria-label "Program"]
-                       [on input (edited (event value))]
-                       [on keydown (key-pressed (event key) (event control) (event meta) (event shift)
+                       [on input (.edited (event value))]
+                       [on keydown (.key-pressed (event key) (event control) (event meta) (event shift)
                                                 (event-number "target.selectionStart"))])))))
       (div ([class "pg-console"])
         (div ([class "pg-head"])
           (span "Console")
-          (button ([class "pg-clear"] [on click clear]) "Clear"))
+          (button ([class "pg-clear"] [on click .clear]) "Clear"))
         (pre ([class "pg-output"] [scroll-end (-> m scroll)])
           (when (and (== (-> m output length) 0) (== (-> m error length) 0))
             (span ([class "pg-idle"]) "Press Run, or Ctrl/⌘ + Enter, to compile and run the program."))
