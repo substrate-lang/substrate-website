@@ -1,4 +1,4 @@
 (uses (std std) (bend2 bend2))
-(root std "/src/std" (exports "encoding/json.sub" "encoding/utf8.sub" "meta/derive.sub" "meta/method.sub" "meta/type.sub"
+(root std "/src/std" (exports "encoding/json.sub" "encoding/utf8.sub" "meta/derive.sub" "meta/generic.sub" "meta/method.sub"
                               "meta/type-info.sub" "string.sub" "vector/vector.sub"))
 (root bend2 "/src/bend2")
