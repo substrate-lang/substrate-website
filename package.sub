@@ -13,8 +13,8 @@
   (sites (website "site.sub" (html "index.html")
                   (files "/src/substrate/compiler" (from compiler) "*.sub")
                   (files "/src/substrate/host" (from host) "**/*.sub")
-                  (files "/src/std" (from std) "encoding/json.sub" "encoding/utf8.sub" "meta/derive.sub" "meta/method.sub"
-                         "meta/type.sub" "meta/type-info.sub" "string.sub" "vector/vector.sub")
+                  (files "/src/std" (from std) "encoding/json.sub" "encoding/utf8.sub" "meta/derive.sub" "meta/generic.sub"
+                         "meta/method.sub" "meta/type-info.sub" "string.sub" "vector/vector.sub")
                   (files "/src/bend2" (from bend2) "*.sub")
                   (files "/src" "session.map")
                   (mount "/sqlite-explorer/" explorer))
