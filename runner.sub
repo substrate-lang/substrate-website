@@ -9,7 +9,7 @@
 (require-unqualified std/encoding/wire)
 (runtime-require compiler/substrate compiler/macros)
 
-(provide runner-main answer ran failed answer.wire-read)
+(provide runner-main answer answer.wire-read)
 
 (variant answer [ran [compile-ms f64] [run-ms f64]] [failed [error string]])
 
@@ -53,7 +53,7 @@
     (set! started (clock-monotonic))
     (when (and ok (defines-main? text)) (set! ok (session-eval-text! '"(main)" '"main.sub")))
     (set! running #f)
-    (answer! (if ok (ran compile-ms (- (clock-monotonic) started)) (failed (datum->string (session-error)))))))
+    (answer! (if ok (.ran compile-ms (- (clock-monotonic) started)) (.failed (datum->string (session-error)))))))
 
 (define (answer! [a answer])
   (let ([b (make-buffer)])
@@ -64,4 +64,4 @@
 (define (trapped [why string])
   (when running
     (set! running #f)
-    (answer! (failed (datum->string (trap-report why))))))
+    (answer! (.failed (datum->string (trap-report why))))))

@@ -2,6 +2,7 @@
 ;; classes site.css colors.
 (require-unqualified web-ui)
 (require-unqualified std/string)
+(require-unqualified std/vector)
 
 (provide code-tokens code-token code-tokenize! code-tokens-free! code-view token-plain token-comment token-text
          token-number token-keyword token-type token-option token-punctuation)
@@ -17,7 +18,7 @@
 
 (struct code-token [index u32] [start u32] [end u32] [kind u32])
 
-(struct code-tokens [items (ptr code-token)] [count u32] [room u32])
+(typedef code-tokens (vector code-token))
 
 (define keywords (array string 44)
   (array-of string "define" "define-syntax" "define-macro" "begin-for-syntax" "let" "let*" "if" "when" "unless" "cond"
@@ -50,25 +51,22 @@
 
 (define (quote-mark? [c u8]) -> bool (or (== c #\') (== c #\`) (== c #\,)))
 
-(define (push![c (ptr code-tokens)] [start u32] [end u32] [kind u32])
+(define (push! [c (ptr code-tokens)] [start u32] [end u32] [kind u32])
   (when (== start end) (return))
-  (when (and (== kind token-plain) (> (-> c count) 0))
-    (let ([last (+ (-> c items) (- (-> c count) 1))])
-      (when (== (-> last kind) token-plain)
-        (set! (-> last end) end)
-        (return))))
-  (when (== (-> c count) (-> c room))
-    (set! (-> c room) (if (== (-> c room) 0) 256 (* 2 (-> c room))))
-    (set! (-> c items) (cast (ptr code-token) (realloc (-> c items) (* (-> c room) (sizeof code-token))))))
-  (let ([t (+ (-> c items) (-> c count))])
-    (set! (-> t index) (-> c count))
-    (set! (-> t start) start)
-    (set! (-> t end) end)
-    (set! (-> t kind) kind)
-    (+= (-> c count) 1)))
+  (let ([n (vector-count c)])
+    (when (and (== kind token-plain) (> n 0))
+      (let ([last (vector-at-unchecked c (- n 1))])
+        (when (== (-> last kind) token-plain)
+          (set! (-> last end) end)
+          (return))))
+    (let ([t (vector-add! c)])
+      (set! (-> t index) n)
+      (set! (-> t start) start)
+      (set! (-> t end) end)
+      (set! (-> t kind) kind))))
 
 (define (code-tokenize! [c (ptr code-tokens)] [s string])
-  (set! (-> c count) 0)
+  (vector-clear! c)
   (let ([n (-> s length)] [i u32 0])
     (while (< i n)
       (let ([ch (@ s i)] [start i])
@@ -100,11 +98,7 @@
                (while (and (< i n) (not (delimiter? (@ s i)))) (+= i 1))
                (push! c start i (word-kind (slice s start i)))])))))
 
-(define (code-tokens-free! [c (ptr code-tokens)])
-  (free (-> c items))
-  (set! (-> c items) 0)
-  (set! (-> c count) 0)
-  (set! (-> c room) 0))
+(define (code-tokens-free! [c (ptr code-tokens)]) (vector-free! c))
 
 (define (token-class [kind u32]) -> string
   (case kind
