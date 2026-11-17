@@ -1,4 +1,4 @@
-;; a reference-counted Scheme, no memory management or GC
+;; a reference-counted Scheme, no tracing GC
 (language scheme)
 
 (define (numbers n)
